@@ -199,16 +199,35 @@ function lessonVariant(lesson) {
   return ["variant-basketball", "variant-soccer", "variant-kids", "variant-special", "variant-recruit"][categoryIndex(lesson.category) % 5];
 }
 
+function parseTimeToMinutes(value) {
+  const match = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return hour * 60 + minute;
+}
+
+function formatHourLabel(hour) {
+  return `${String(hour).padStart(2, "0")}:00~`;
+}
+
 function makeTimeSlots(lessons) {
-  const starts = lessons
-    .filter((lesson) => lesson.startTime)
-    .map((lesson) => Number((lesson.startTime || "00:00").slice(0, 2)))
-    .filter((hour) => Number.isFinite(hour));
+  const ranges = lessons
+    .map((lesson) => {
+      const start = parseTimeToMinutes(lesson.startTime);
+      const rawEnd = parseTimeToMinutes(lesson.endTime);
+      if (start === null) return null;
+      const end = rawEnd !== null && rawEnd > start ? rawEnd : start + 60;
+      return { start, end };
+    })
+    .filter(Boolean);
 
-  if (!starts.length) return [];
+  if (!ranges.length) return [];
 
-  const minHour = Math.max(6, Math.min(...starts));
-  const maxHour = Math.min(23, Math.max(...starts) + 1);
+  const minHour = Math.max(6, Math.floor(Math.min(...ranges.map((range) => range.start)) / 60));
+  const maxHour = Math.min(24, Math.ceil(Math.max(...ranges.map((range) => range.end)) / 60));
   const slots = [];
   for (let hour = minHour; hour < maxHour; hour += 1) {
     slots.push({
@@ -216,15 +235,48 @@ function makeTimeSlots(lessons) {
       endTime: `${String(hour + 1).padStart(2, "0")}:00`,
       startHour: hour,
       endHour: hour + 1,
+      startMinutes: hour * 60,
+      endMinutes: (hour + 1) * 60,
       key: `${hour}`
     });
   }
   return slots;
 }
 
-function lessonInSlot(lesson, slot) {
-  const hour = Number((lesson.startTime || "00:00").slice(0, 2));
-  return hour === slot.startHour;
+function lessonRange(lesson) {
+  const start = parseTimeToMinutes(lesson.startTime);
+  const rawEnd = parseTimeToMinutes(lesson.endTime);
+  if (start === null) return null;
+  const end = rawEnd !== null && rawEnd > start ? rawEnd : start + 60;
+  return { start, end };
+}
+
+function assignLessonLanes(dayLessons) {
+  const sorted = [...dayLessons]
+    .map((lesson) => ({ lesson, range: lessonRange(lesson) }))
+    .filter((item) => item.range)
+    .sort((a, b) => a.range.start - b.range.start || a.range.end - b.range.end);
+
+  const active = [];
+  let maxLaneCount = 1;
+  const assignments = new Map();
+
+  sorted.forEach((item) => {
+    for (let i = active.length - 1; i >= 0; i -= 1) {
+      if (active[i].range.end <= item.range.start) active.splice(i, 1);
+    }
+
+    let lane = 0;
+    const usedLanes = new Set(active.map((activeItem) => activeItem.lane));
+    while (usedLanes.has(lane)) lane += 1;
+
+    const positioned = { ...item, lane };
+    active.push(positioned);
+    maxLaneCount = Math.max(maxLaneCount, lane + 1, active.length);
+    assignments.set(item.lesson.id || `${item.lesson.day}-${item.lesson.startTime}-${item.lesson.name}`, positioned);
+  });
+
+  return { assignments, laneCount: maxLaneCount };
 }
 
 function renderTabs(lessons) {
@@ -263,6 +315,10 @@ function renderTimetableSection(title, days, lessons) {
   const slots = makeTimeSlots(sectionLessons);
   if (!slots.length) return null;
 
+  const minMinutes = slots[0].startMinutes;
+  const maxMinutes = slots[slots.length - 1].endMinutes;
+  const totalMinutes = Math.max(60, maxMinutes - minMinutes);
+
   const section = document.createElement("section");
   section.className = "board-section";
 
@@ -272,51 +328,76 @@ function renderTimetableSection(title, days, lessons) {
   section.append(heading);
 
   const scroller = document.createElement("div");
-  scroller.className = "timetable-scroller";
+  scroller.className = "timetable-scroller schedule-grid-scroller";
 
-  const table = document.createElement("table");
-  table.className = "timetable board-timetable";
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th scope="col" class="time-head">시간</th>
-        ${days.map((day) => `<th scope="col">${day}</th>`).join("")}
-      </tr>
-    </thead>
-    <tbody></tbody>
-  `;
+  const grid = document.createElement("div");
+  grid.className = "schedule-grid duration-timetable";
+  grid.style.setProperty("--days-count", days.length);
+  grid.style.setProperty("--slot-count", slots.length);
 
-  const tbody = table.querySelector("tbody");
+  const timeHead = document.createElement("div");
+  timeHead.className = "grid-head time-head";
+  timeHead.style.gridColumn = "1";
+  timeHead.style.gridRow = "1";
+  timeHead.textContent = "시간";
+  grid.append(timeHead);
 
-  slots.forEach((slot) => {
-    const row = document.createElement("tr");
-    const timeCell = document.createElement("th");
-    timeCell.scope = "row";
-    timeCell.className = "time-cell";
-    timeCell.innerHTML = `<strong>${escapeHtml(slot.startTime.slice(0, 2))}:00대</strong><span>실제 시간은 카드 확인</span>`;
-    row.append(timeCell);
-
-    days.forEach((day) => {
-      const cell = document.createElement("td");
-      const cellLessons = sectionLessons.filter((lesson) => lesson.day === day && lessonInSlot(lesson, slot)).sort(byTime);
-
-      if (!cellLessons.length) {
-        cell.className = "empty-cell";
-        cell.innerHTML = "";
-      } else {
-        const stack = document.createElement("div");
-        stack.className = "cell-stack";
-        cellLessons.forEach((lesson) => stack.append(renderLessonCard(lesson)));
-        cell.append(stack);
-      }
-
-      row.append(cell);
-    });
-
-    tbody.append(row);
+  days.forEach((day, dayIndex) => {
+    const dayHead = document.createElement("div");
+    dayHead.className = "grid-head day-head";
+    dayHead.style.gridColumn = String(dayIndex + 2);
+    dayHead.style.gridRow = "1";
+    dayHead.textContent = day;
+    grid.append(dayHead);
   });
 
-  scroller.append(table);
+  slots.forEach((slot, slotIndex) => {
+    const rowNumber = slotIndex + 2;
+    const timeCell = document.createElement("div");
+    timeCell.className = "grid-time-cell time-cell";
+    timeCell.style.gridColumn = "1";
+    timeCell.style.gridRow = String(rowNumber);
+    timeCell.innerHTML = `<strong>${escapeHtml(formatHourLabel(slot.startHour))}</strong>`;
+    grid.append(timeCell);
+
+    days.forEach((day, dayIndex) => {
+      const gridSlot = document.createElement("div");
+      gridSlot.className = "grid-slot";
+      gridSlot.style.gridColumn = String(dayIndex + 2);
+      gridSlot.style.gridRow = String(rowNumber);
+      grid.append(gridSlot);
+    });
+  });
+
+  days.forEach((day, dayIndex) => {
+    const track = document.createElement("div");
+    track.className = "day-track";
+    track.style.gridColumn = String(dayIndex + 2);
+    track.style.gridRow = `2 / span ${slots.length}`;
+
+    const dayLessons = sectionLessons.filter((lesson) => lesson.day === day).sort(byTime);
+    const { assignments, laneCount } = assignLessonLanes(dayLessons);
+
+    dayLessons.forEach((lesson) => {
+      const range = lessonRange(lesson);
+      if (!range) return;
+      const assignmentKey = lesson.id || `${lesson.day}-${lesson.startTime}-${lesson.name}`;
+      const assignment = assignments.get(assignmentKey) || { lane: 0 };
+      const topPercent = ((range.start - minMinutes) / totalMinutes) * 100;
+      const heightPercent = ((range.end - range.start) / totalMinutes) * 100;
+      const laneWidth = 100 / Math.max(1, laneCount);
+      const card = renderLessonCard(lesson);
+      card.style.setProperty("--lesson-top", `${Math.max(0, topPercent)}%`);
+      card.style.setProperty("--lesson-height", `${Math.max(6, heightPercent)}%`);
+      card.style.setProperty("--lesson-left", `${assignment.lane * laneWidth}%`);
+      card.style.setProperty("--lesson-width", `${laneWidth}%`);
+      track.append(card);
+    });
+
+    grid.append(track);
+  });
+
+  scroller.append(grid);
   section.append(scroller);
   return section;
 }
