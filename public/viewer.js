@@ -13,7 +13,7 @@ const categoryTabs = document.querySelector("#categoryTabs");
 const dayOrder = ["월", "화", "수", "목", "금", "토", "일"];
 const weekdayOrder = ["월", "화", "수", "목", "금"];
 const weekendOrder = ["토", "일"];
-const categories = [
+const defaultCategories = [
   { id: "basketball", label: "농구교실", shortLabel: "농구", icon: "🏀" },
   { id: "soccer", label: "축구교실", shortLabel: "축구", icon: "⚽" },
   { id: "kids", label: "키즈스포츠", shortLabel: "키즈", icon: "🧒" }
@@ -30,6 +30,7 @@ const defaults = {
   gatheringLinkUrl: "https://classroute-site.netlify.app/",
   counselLinkLabel: "상담 및 신청서 작성",
   counselLinkUrl: "https://dosportslink.netlify.app/",
+  categories: defaultCategories,
   actionLinks: [
     { id: "opening", label: "개설 희망", url: "https://classroute-site.netlify.app/", style: "secondary" },
     { id: "gathering", label: "반 모으기", url: "https://classroute-site.netlify.app/", style: "secondary" },
@@ -49,6 +50,8 @@ const fallbackSchedule = {
     { id: "sample-kids-2", category: "kids", day: "토", startTime: "11:00", endTime: "11:50", name: "유아 밸런스", grade: "5-7세", capacity: 8, currentStudents: 6, place: "키즈룸" }
   ]
 };
+
+let categories = [...defaultCategories];
 
 function getStorageItem(key, fallback) {
   try {
@@ -79,11 +82,42 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function normalizeCategories(data = {}) {
+  const source = Array.isArray(data.categories) && data.categories.length ? data.categories : defaultCategories;
+  const used = new Set();
+  const result = source.slice(0, 20).map((category, index) => {
+    const fallback = defaultCategories[index] || { label: "수업분류", icon: "🏷️" };
+    const rawId = String(category.id || `category-${index + 1}`).replace(/[^a-zA-Z0-9_-]/g, "-") || `category-${index + 1}`;
+    let id = rawId;
+    let suffix = 2;
+    while (used.has(id)) {
+      id = `${rawId}-${suffix}`;
+      suffix += 1;
+    }
+    used.add(id);
+    const label = String(category.label || category.shortLabel || fallback.label || "수업분류").trim() || "수업분류";
+    return {
+      id,
+      label: label.slice(0, 30),
+      shortLabel: String(category.shortLabel || label).trim().slice(0, 20),
+      icon: String(category.icon || fallback.icon || "🏷️").trim().slice(0, 8)
+    };
+  });
+  return result.length ? result : [...defaultCategories];
+}
+
+function ensureActiveCategory() {
+  if (!categories.some((category) => category.id === activeCategory)) {
+    activeCategory = categories[0]?.id || "basketball";
+    setStorageItem("academyActiveCategory", activeCategory);
+  }
+}
+
 function normalizeLesson(lesson) {
   const categoryIds = categories.map((category) => category.id);
   return {
     ...lesson,
-    category: categoryIds.includes(lesson.category) ? lesson.category : "basketball",
+    category: categoryIds.includes(lesson.category) ? lesson.category : (categories[0]?.id || "basketball"),
     place: lesson.place || lesson.room || ""
   };
 }
@@ -140,13 +174,6 @@ function byDayAndTime(a, b) {
   return dayDiff || byTime(a, b);
 }
 
-function capacityClass(lesson) {
-  const current = Number(lesson.currentStudents || 0);
-  const limit = Number(lesson.capacity || 0);
-  if (!limit) return "";
-  return current >= limit ? "full" : "open";
-}
-
 function capacityText(lesson) {
   const current = Number(lesson.currentStudents || 0);
   const limit = Number(lesson.capacity || 0);
@@ -155,16 +182,21 @@ function capacityText(lesson) {
 }
 
 function categoryInfo(id = activeCategory) {
-  return categories.find((category) => category.id === id) || categories[0];
+  return categories.find((category) => category.id === id) || categories[0] || defaultCategories[0];
+}
+
+function categoryIndex(id) {
+  return Math.max(0, categories.findIndex((category) => category.id === id));
 }
 
 function lessonVariant(lesson) {
-  const text = `${lesson.name || ""} ${lesson.grade || ""} ${lesson.place || ""}`;
-  if (lesson.category === "kids" || /유치|유아|키즈|5세|6세|7세/.test(text)) return "variant-kids";
-  if (lesson.category === "soccer" || /축구|비기너|풋살/.test(text)) return "variant-soccer";
-  if (/결스|대표|심화/.test(text)) return "variant-special";
+  const category = categoryInfo(lesson.category);
+  const text = `${category.label || ""} ${lesson.name || ""} ${lesson.grade || ""} ${lesson.place || ""}`;
+  if (/유치|유아|키즈|5세|6세|7세/.test(text)) return "variant-kids";
+  if (/축구|비기너|풋살/.test(text)) return "variant-soccer";
+  if (/입시|성인|결스|대표|심화|특강/.test(text)) return "variant-special";
   if (/모집/.test(text)) return "variant-recruit";
-  return "variant-basketball";
+  return ["variant-basketball", "variant-soccer", "variant-kids", "variant-special", "variant-recruit"][categoryIndex(lesson.category) % 5];
 }
 
 function makeTimeSlots(lessons) {
@@ -197,6 +229,7 @@ function lessonInSlot(lesson, slot) {
 
 function renderTabs(lessons) {
   categoryTabs.innerHTML = "";
+  ensureActiveCategory();
 
   categories.forEach((category) => {
     const count = lessons.filter((lesson) => lesson.category === category.id).length;
@@ -204,7 +237,7 @@ function renderTabs(lessons) {
     button.type = "button";
     button.className = `tab-button ${activeCategory === category.id ? "active" : ""}`;
     button.dataset.category = category.id;
-    button.innerHTML = `<span>${category.icon} ${category.label}</span><strong>${count}</strong>`;
+    button.innerHTML = `<span>${escapeHtml(category.icon || "")} ${escapeHtml(category.label)}</span><strong>${count}</strong>`;
     categoryTabs.append(button);
   });
 }
@@ -312,6 +345,9 @@ function scheduleHash(data) {
 }
 
 function render(data) {
+  categories = normalizeCategories(data);
+  ensureActiveCategory();
+
   academyName.textContent = data.academyName || defaults.academyName;
   heroTitle.textContent = data.heroTitle || defaults.heroTitle;
   heroDescription.textContent = data.heroDescription || defaults.heroDescription;
@@ -332,8 +368,6 @@ async function loadSchedule() {
     const incomingData = await response.json();
     const incomingHash = scheduleHash(incomingData);
 
-    // 2초마다 데이터를 확인하되, 내용이 같으면 시간표 DOM을 다시 그리지 않습니다.
-    // 모바일에서 시간표를 보고 있는 중에 화면이 처음 위치로 튀는 현상을 막기 위한 처리입니다.
     if (incomingHash !== latestDataHash) {
       latestData = incomingData;
       latestDataHash = incomingHash;

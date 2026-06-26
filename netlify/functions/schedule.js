@@ -1,8 +1,13 @@
 const { getStore } = require("@netlify/blobs");
 const { randomUUID } = require("crypto");
 
-const allowedCategories = ["basketball", "soccer", "kids"];
 const allowedDays = ["월", "화", "수", "목", "금", "토", "일"];
+
+const defaultCategories = [
+  { id: "basketball", label: "농구", icon: "🏀" },
+  { id: "soccer", label: "축구", icon: "⚽" },
+  { id: "kids", label: "키즈", icon: "🧒" }
+];
 
 const defaultActionLinks = [
   { id: "opening", label: "개설 희망", url: "https://classroute-site.netlify.app/", style: "secondary" },
@@ -21,6 +26,7 @@ const defaults = {
   gatheringLinkUrl: "https://classroute-site.netlify.app/",
   counselLinkLabel: "상담 및 신청서 작성",
   counselLinkUrl: "https://dosportslink.netlify.app/",
+  categories: defaultCategories,
   actionLinks: defaultActionLinks
 };
 
@@ -48,10 +54,6 @@ function json(statusCode, body) {
   };
 }
 
-function safeCategory(value) {
-  return allowedCategories.includes(value) ? value : "basketball";
-}
-
 function safeDay(value) {
   return allowedDays.includes(value) ? value : "월";
 }
@@ -59,6 +61,44 @@ function safeDay(value) {
 function safeUrl(value, fallback) {
   const url = String(value || "").trim().slice(0, 250);
   return url.startsWith("https://") || url.startsWith("http://") ? url : fallback;
+}
+
+function safeNumber(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) && number >= 0 ? number : 0;
+}
+
+function safeCategoryId(value, categories) {
+  const categoryIds = categories.map((category) => category.id);
+  return categoryIds.includes(value) ? value : categories[0].id;
+}
+
+function sanitizeCategories(input = {}) {
+  const source = Array.isArray(input.categories) && input.categories.length ? input.categories : defaultCategories;
+  const usedIds = new Set();
+  const categories = [];
+
+  source.slice(0, 20).forEach((category, index) => {
+    const fallback = defaultCategories[index] || { label: "수업", icon: "🏷️" };
+    const rawLabel = String(category.label || category.shortLabel || fallback.label || "수업분류").trim().slice(0, 30);
+    const rawId = String(category.id || `category-${index + 1}`).trim().slice(0, 80);
+    const cleanId = rawId.replace(/[^a-zA-Z0-9_-]/g, "-") || `category-${index + 1}`;
+    let id = cleanId;
+    let suffix = 2;
+    while (usedIds.has(id)) {
+      id = `${cleanId}-${suffix}`;
+      suffix += 1;
+    }
+    usedIds.add(id);
+    categories.push({
+      id,
+      label: rawLabel || fallback.label || "수업분류",
+      shortLabel: String(category.shortLabel || rawLabel || fallback.label || "수업").trim().slice(0, 20),
+      icon: String(category.icon || fallback.icon || "🏷️").trim().slice(0, 8)
+    });
+  });
+
+  return categories.length ? categories : defaultCategories;
 }
 
 function legacyActionLinks(input = {}) {
@@ -86,12 +126,9 @@ function sanitizeActionLinks(input = {}) {
     .filter((link) => link.label && link.url);
 }
 
-function safeNumber(value) {
-  const number = Number(value || 0);
-  return Number.isFinite(number) && number >= 0 ? number : 0;
-}
-
 function sanitizeSchedule(input = {}) {
+  const categories = sanitizeCategories(input);
+
   return {
     academyName: String(input.academyName || defaults.academyName).slice(0, 80),
     heroTitle: String(input.heroTitle || defaults.heroTitle).slice(0, 120),
@@ -103,11 +140,12 @@ function sanitizeSchedule(input = {}) {
     gatheringLinkUrl: safeUrl(input.gatheringLinkUrl, defaults.gatheringLinkUrl),
     counselLinkLabel: String(input.counselLinkLabel || defaults.counselLinkLabel).slice(0, 60),
     counselLinkUrl: safeUrl(input.counselLinkUrl, defaults.counselLinkUrl),
+    categories,
     actionLinks: sanitizeActionLinks(input),
     lessons: Array.isArray(input.lessons)
       ? input.lessons.map((lesson) => ({
           id: String(lesson.id || randomUUID()).slice(0, 80),
-          category: safeCategory(lesson.category),
+          category: safeCategoryId(lesson.category, categories),
           day: safeDay(lesson.day),
           startTime: String(lesson.startTime || "").slice(0, 5),
           endTime: String(lesson.endTime || "").slice(0, 5),
@@ -122,8 +160,6 @@ function sanitizeSchedule(input = {}) {
 }
 
 function getScheduleStore() {
-  // 일부 Netlify 프로젝트에서는 Blobs SDK가 사이트 정보를 자동으로 받지 못합니다.
-  // 그 경우 Netlify 환경변수로 사이트 ID와 토큰을 넣고 아래처럼 직접 전달해야 합니다.
   const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
   const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_AUTH_TOKEN;
 

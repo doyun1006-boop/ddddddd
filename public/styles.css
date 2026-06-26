@@ -2299,3 +2299,74 @@ button.danger {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* v13: 관리자에서 수업분류 탭을 직접 추가/수정할 수 있도록 보강 */
+.category-tabs {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.category-editor-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.category-row {
+  display: grid;
+  grid-template-columns: 76px minmax(140px, 1fr) 86px auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid #dde7eb;
+  border-radius: 14px;
+  background: #fbfcff;
+}
+
+.category-row label {
+  margin: 0;
+  font-size: 13px;
+}
+
+.category-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #eef4fb;
+  color: #33415c;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.category-actions {
+  justify-content: flex-end;
+}
+
+.category-actions button,
+.link-actions button {
+  min-width: 42px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+@media (max-width: 720px) {
+  .category-row {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .category-count,
+  .category-actions {
+    grid-column: 1 / -1;
+  }
+
+  .category-actions {
+    justify-content: stretch;
+  }
+
+  .category-actions button {
+    flex: 1;
+  }
+}
