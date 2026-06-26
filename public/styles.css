@@ -1223,3 +1223,511 @@ button.danger {
     font-size: 15px;
   }
 }
+
+/* v9: 잠실점 보드형 시간표 디자인 */
+.board-style-page {
+  background: #0f1420;
+  color: #f8fbff;
+}
+
+.board-style-page .brand-watermark {
+  opacity: 0.025;
+  background-position: right 24px bottom 24px;
+  background-size: 420px auto;
+}
+
+.schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: min(1180px, calc(100% - 24px));
+  margin: 10px auto 12px;
+  padding: 16px 18px;
+  border: 1px solid #353d52;
+  border-radius: 12px;
+  background: #191e2b;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+
+.schedule-brand h1 {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.schedule-brand h1::first-letter {
+  color: #f4a517;
+}
+
+.schedule-brand p {
+  margin: 7px 0 0;
+  color: #b8c5dc;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.schedule-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.compact-status {
+  padding: 8px 11px;
+  border-color: #334155;
+  background: #0f172a;
+  color: #d7e3f5;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.compact-status .dot {
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+}
+
+.edit-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid #46516a;
+  border-radius: 10px;
+  background: #1c2232;
+  color: #ffffff;
+  font-weight: 950;
+  text-decoration: none;
+}
+
+.board-shell {
+  width: min(1180px, calc(100% - 24px));
+  margin: 0 auto 40px;
+  display: grid;
+  gap: 12px;
+}
+
+.board-style-page .connection-warning {
+  border-radius: 10px;
+  background: rgba(127, 29, 29, 0.26);
+}
+
+.notice-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 52px;
+  padding: 12px 18px;
+  border: 1px solid #353d52;
+  border-radius: 10px;
+  background: #1a1f2d;
+  overflow: hidden;
+}
+
+.notice-bar strong {
+  flex: 0 0 auto;
+  color: #f6aa1c;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.notice-bar p {
+  margin: 0;
+  color: #f8b62d;
+  font-size: 15px;
+  font-weight: 950;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-link-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quick-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #353d52;
+  border-radius: 10px;
+  background: #1b2131;
+  color: #f2f7ff;
+  font-weight: 950;
+  text-align: center;
+  text-decoration: none;
+}
+
+.quick-link.primary {
+  border-color: #2c66d9;
+  background: linear-gradient(180deg, #2d6cdf, #1f4eb4);
+}
+
+.schedule-main-title {
+  margin: 2px 0 -2px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.board-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.board-tabs .tab-button {
+  min-height: 58px;
+  border: 1px solid #3a4359;
+  border-radius: 10px;
+  background: #1d2232;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.board-tabs .tab-button span {
+  font-size: 17px;
+}
+
+.board-tabs .tab-button strong {
+  display: none;
+}
+
+.board-tabs .tab-button.active {
+  border-color: #f3a51a;
+  background: #f0a51a;
+  color: #1a1203;
+}
+
+.board-section {
+  display: grid;
+  gap: 8px;
+}
+
+.board-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.board-section-heading strong {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.board-section-heading span {
+  color: #aebbd3;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.board-style-page .timetable-scroller {
+  overflow-x: auto;
+  border: 1px solid #343b4e;
+  border-radius: 8px;
+  background: #121722;
+  box-shadow: none;
+}
+
+.board-style-page .timetable {
+  min-width: 780px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.board-style-page .timetable th,
+.board-style-page .timetable td {
+  border: 1px solid #2b3243;
+}
+
+.board-style-page .timetable thead th {
+  position: static;
+  padding: 14px 8px;
+  background: #202536;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.board-style-page .time-head {
+  width: 114px;
+}
+
+.board-style-page .time-cell {
+  position: static;
+  width: 114px;
+  padding: 10px 6px;
+  background: #171c28;
+  color: #cce0ff;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.board-style-page .time-cell strong {
+  color: #cfe2ff;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.board-style-page .time-cell span {
+  display: none;
+}
+
+.board-style-page .timetable td {
+  height: 96px;
+  padding: 4px;
+  background: #151a25;
+  vertical-align: top;
+}
+
+.board-style-page .timetable tbody tr:nth-child(even) td {
+  background: #151a25;
+}
+
+.board-style-page .empty-cell {
+  background: #151a25;
+}
+
+.board-style-page .cell-stack {
+  gap: 4px;
+}
+
+.board-style-page .timetable-lesson {
+  min-height: 72px;
+  gap: 4px;
+  align-content: center;
+  justify-items: center;
+  padding: 8px 6px;
+  border: 1px solid rgba(96, 165, 250, 0.16);
+  border-left: 0;
+  border-radius: 6px;
+  background: #0b2a55;
+  color: #ffffff;
+  box-shadow: none;
+  text-align: center;
+}
+
+.board-style-page .timetable-lesson .lesson-name {
+  color: #79bbff;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.15;
+}
+
+.board-style-page .grade-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-height: 21px;
+  padding: 2px 7px;
+  border: 1px solid rgba(96, 165, 250, 0.72);
+  border-radius: 6px;
+  color: #cde6ff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.board-style-page .capacity-text {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.board-style-page .place-text {
+  color: #a8c6ef;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.board-style-page .variant-basketball {
+  background: #09234a;
+}
+
+.board-style-page .variant-recruit,
+.board-style-page .variant-soccer {
+  background: #062815;
+}
+
+.board-style-page .variant-recruit .lesson-name,
+.board-style-page .variant-soccer .lesson-name {
+  color: #34f5a2;
+}
+
+.board-style-page .variant-recruit .grade-chip,
+.board-style-page .variant-soccer .grade-chip {
+  border-color: rgba(52, 245, 162, 0.65);
+  color: #9ffacc;
+}
+
+.board-style-page .variant-kids,
+.board-style-page .variant-special {
+  background: #35051c;
+}
+
+.board-style-page .variant-kids .lesson-name,
+.board-style-page .variant-special .lesson-name {
+  color: #ff89c5;
+}
+
+.board-style-page .variant-kids .grade-chip,
+.board-style-page .variant-special .grade-chip {
+  border-color: rgba(255, 137, 197, 0.7);
+  color: #ffc9e4;
+}
+
+.board-style-page .empty {
+  border-color: #343b4e;
+  border-radius: 10px;
+  background: #171c28;
+}
+
+@media (max-width: 760px) {
+  .board-style-page .brand-watermark {
+    display: none;
+  }
+
+  .schedule-header {
+    width: min(100%, calc(100% - 12px));
+    margin-top: 6px;
+    padding: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .schedule-brand h1 {
+    font-size: 20px;
+  }
+
+  .schedule-brand p {
+    font-size: 12px;
+  }
+
+  .schedule-header-actions {
+    justify-content: space-between;
+  }
+
+  .edit-link {
+    min-height: 38px;
+    padding: 0 14px;
+  }
+
+  .board-shell {
+    width: min(100%, calc(100% - 12px));
+    gap: 8px;
+    margin-bottom: 26px;
+  }
+
+  .notice-bar {
+    min-height: 46px;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .notice-bar strong,
+  .notice-bar p {
+    font-size: 13px;
+  }
+
+  .quick-link-row {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-link {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  .schedule-main-title {
+    font-size: 15px;
+  }
+
+  .board-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    padding: 5px 0;
+    background: rgba(15, 20, 32, 0.94);
+    backdrop-filter: blur(10px);
+  }
+
+  .board-tabs .tab-button {
+    min-height: 48px;
+    border-radius: 8px;
+  }
+
+  .board-tabs .tab-button span {
+    font-size: 14px;
+  }
+
+  .board-section-heading strong {
+    font-size: 14px;
+  }
+
+  .board-section-heading span {
+    display: none;
+  }
+
+  .board-style-page .timetable-scroller {
+    display: block;
+    border-radius: 6px;
+  }
+
+  .board-style-page .timetable {
+    min-width: 720px;
+  }
+
+  .board-style-page .time-head,
+  .board-style-page .time-cell {
+    width: 96px;
+  }
+
+  .board-style-page .timetable thead th {
+    padding: 11px 6px;
+    font-size: 13px;
+  }
+
+  .board-style-page .time-cell strong {
+    font-size: 12px;
+  }
+
+  .board-style-page .timetable td {
+    height: 84px;
+    padding: 3px;
+  }
+
+  .board-style-page .timetable-lesson {
+    min-height: 66px;
+    padding: 6px 4px;
+  }
+
+  .board-style-page .timetable-lesson .lesson-name {
+    font-size: 12px;
+  }
+
+  .board-style-page .grade-chip {
+    min-height: 18px;
+    padding: 2px 5px;
+    font-size: 9px;
+  }
+
+  .board-style-page .capacity-text {
+    font-size: 11px;
+  }
+
+  .board-style-page .mobile-schedule-list {
+    display: none !important;
+  }
+}

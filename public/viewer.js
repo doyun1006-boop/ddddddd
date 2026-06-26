@@ -13,17 +13,19 @@ const liveDot = document.querySelector("#liveDot");
 const categoryTabs = document.querySelector("#categoryTabs");
 
 const dayOrder = ["월", "화", "수", "목", "금", "토", "일"];
+const weekdayOrder = ["월", "화", "수", "목", "금"];
+const weekendOrder = ["토", "일"];
 const categories = [
-  { id: "basketball", label: "농구" },
-  { id: "soccer", label: "축구" },
-  { id: "kids", label: "키즈" }
+  { id: "basketball", label: "농구교실", shortLabel: "농구", icon: "🏀" },
+  { id: "soccer", label: "축구교실", shortLabel: "축구", icon: "⚽" },
+  { id: "kids", label: "키즈스포츠", shortLabel: "키즈", icon: "🧒" }
 ];
 
 const defaults = {
-  academyName: "DO SPORTS ACADEMY",
+  academyName: "DO SPORTS 잠실점 시간표",
   heroTitle: "농구 · 축구 · 키즈 수업을 한눈에 보는 시간표",
-  heroDescription: "수업 시간, 학년, 정원, 장소를 확인하시고 변경 사항은 최대 2초 안에 자동 반영됩니다.",
-  notice: "시간표는 수시로 변경될 수 있습니다. 장소와 정원 현황을 꼭 확인해 주세요.",
+  heroDescription: "학부모님이 바로 확인할 수 있는 실시간 반별 시간표입니다.",
+  notice: "축구교실 농구교실 취미&심화 모집   ✦   연령별 대표반 모집   🔔 ⚽🏀 반 축구 반 농구",
   openingLinkLabel: "개설 희망",
   openingLinkUrl: "https://classroute-site.netlify.app/",
   gatheringLinkLabel: "반 모으기",
@@ -35,12 +37,12 @@ const defaults = {
 const fallbackSchedule = {
   ...defaults,
   lessons: [
-    { id: "sample-basketball-1", category: "basketball", day: "월", startTime: "15:00", endTime: "16:00", name: "농구 기초반", grade: "초1-3", capacity: 10, currentStudents: 7, place: "1코트" },
-    { id: "sample-basketball-2", category: "basketball", day: "수", startTime: "17:00", endTime: "18:20", name: "농구 스킬반", grade: "초4-6", capacity: 12, currentStudents: 10, place: "메인코트" },
-    { id: "sample-basketball-3", category: "basketball", day: "금", startTime: "19:00", endTime: "20:30", name: "중등 농구반", grade: "중1-3", capacity: 12, currentStudents: 8, place: "메인코트" },
-    { id: "sample-soccer-1", category: "soccer", day: "화", startTime: "16:00", endTime: "17:00", name: "축구 기초반", grade: "초1-2", capacity: 12, currentStudents: 9, place: "풋살장" },
-    { id: "sample-soccer-2", category: "soccer", day: "목", startTime: "18:00", endTime: "19:20", name: "축구 게임반", grade: "초3-5", capacity: 14, currentStudents: 14, place: "풋살장" },
-    { id: "sample-kids-1", category: "kids", day: "월", startTime: "16:20", endTime: "17:10", name: "키즈 체육", grade: "6-7세", capacity: 8, currentStudents: 5, place: "키즈룸" },
+    { id: "sample-basketball-1", category: "basketball", day: "월", startTime: "15:00", endTime: "16:00", name: "모집중", grade: "초등부", capacity: 12, currentStudents: 7, place: "1코트" },
+    { id: "sample-basketball-2", category: "basketball", day: "수", startTime: "16:00", endTime: "17:00", name: "오픈반", grade: "초4-6", capacity: 12, currentStudents: 6, place: "메인코트" },
+    { id: "sample-basketball-3", category: "basketball", day: "금", startTime: "19:00", endTime: "20:00", name: "오픈반", grade: "초5-중등", capacity: 12, currentStudents: 4, place: "메인코트" },
+    { id: "sample-soccer-1", category: "soccer", day: "화", startTime: "16:00", endTime: "17:00", name: "초등부", grade: "초5-6", capacity: 10, currentStudents: 3, place: "풋살장" },
+    { id: "sample-soccer-2", category: "soccer", day: "목", startTime: "18:00", endTime: "19:00", name: "비기너 화,목 주2회", grade: "초등 저학년", capacity: 8, currentStudents: 0, place: "풋살장" },
+    { id: "sample-kids-1", category: "kids", day: "월", startTime: "17:00", endTime: "18:00", name: "유치부 모집", grade: "5세반, 6세반, 7세반", capacity: 8, currentStudents: 3, place: "키즈룸" },
     { id: "sample-kids-2", category: "kids", day: "토", startTime: "11:00", endTime: "11:50", name: "유아 밸런스", grade: "5-7세", capacity: 8, currentStudents: 6, place: "키즈룸" }
   ]
 };
@@ -63,7 +65,6 @@ function setStorageItem(key, value) {
 
 let activeCategory = getStorageItem("academyActiveCategory", "basketball");
 let latestData = null;
-let usingFallback = false;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -89,13 +90,14 @@ function safeUrl(value, fallback) {
 }
 
 function updateLink(element, label, url, fallbackLabel, fallbackUrl) {
+  if (!element) return;
   element.textContent = label || fallbackLabel;
   element.href = safeUrl(url, fallbackUrl);
   element.hidden = false;
 }
 
 function byTime(a, b) {
-  return a.startTime.localeCompare(b.startTime) || a.endTime.localeCompare(b.endTime);
+  return (a.startTime || "").localeCompare(b.startTime || "") || (a.endTime || "").localeCompare(b.endTime || "");
 }
 
 function byDayAndTime(a, b) {
@@ -117,14 +119,45 @@ function capacityText(lesson) {
   return `${current}/${limit}명`;
 }
 
+function categoryInfo(id = activeCategory) {
+  return categories.find((category) => category.id === id) || categories[0];
+}
+
+function lessonVariant(lesson) {
+  const text = `${lesson.name || ""} ${lesson.grade || ""} ${lesson.place || ""}`;
+  if (lesson.category === "kids" || /유치|유아|키즈|5세|6세|7세/.test(text)) return "variant-kids";
+  if (lesson.category === "soccer" || /축구|비기너|풋살/.test(text)) return "variant-soccer";
+  if (/결스|대표|심화/.test(text)) return "variant-special";
+  if (/모집/.test(text)) return "variant-recruit";
+  return "variant-basketball";
+}
+
 function makeTimeSlots(lessons) {
-  const slots = new Map();
-  lessons.forEach((lesson) => {
-    if (!lesson.startTime || !lesson.endTime) return;
-    const key = `${lesson.startTime}-${lesson.endTime}`;
-    slots.set(key, { startTime: lesson.startTime, endTime: lesson.endTime, key });
-  });
-  return [...slots.values()].sort(byTime);
+  const starts = lessons
+    .filter((lesson) => lesson.startTime)
+    .map((lesson) => Number((lesson.startTime || "00:00").slice(0, 2)))
+    .filter((hour) => Number.isFinite(hour));
+
+  if (!starts.length) return [];
+
+  const minHour = Math.max(6, Math.min(...starts));
+  const maxHour = Math.min(23, Math.max(...starts) + 1);
+  const slots = [];
+  for (let hour = minHour; hour < maxHour; hour += 1) {
+    slots.push({
+      startTime: `${String(hour).padStart(2, "0")}:00`,
+      endTime: `${String(hour + 1).padStart(2, "0")}:00`,
+      startHour: hour,
+      endHour: hour + 1,
+      key: `${hour}`
+    });
+  }
+  return slots;
+}
+
+function lessonInSlot(lesson, slot) {
+  const hour = Number((lesson.startTime || "00:00").slice(0, 2));
+  return hour === slot.startHour;
 }
 
 function renderTabs(lessons) {
@@ -136,90 +169,48 @@ function renderTabs(lessons) {
     button.type = "button";
     button.className = `tab-button ${activeCategory === category.id ? "active" : ""}`;
     button.dataset.category = category.id;
-    button.innerHTML = `<span>${category.label}</span><strong>${count}</strong>`;
+    button.innerHTML = `<span>${category.icon} ${category.label}</span><strong>${count}</strong>`;
     categoryTabs.append(button);
   });
 }
 
 function renderLessonCard(lesson) {
   const card = document.createElement("div");
-  card.className = "timetable-lesson";
+  card.className = `timetable-lesson ${lessonVariant(lesson)}`;
   card.innerHTML = `
     <p class="lesson-name">${escapeHtml(lesson.name || "수업명 미입력")}</p>
-    <div class="lesson-meta compact">
-      <span class="pill">${escapeHtml(lesson.grade || "학년 미정")}</span>
-      <span class="pill capacity ${capacityClass(lesson)}">${escapeHtml(capacityText(lesson))}</span>
-      ${lesson.place ? `<span class="pill place">📍 ${escapeHtml(lesson.place)}</span>` : ""}
-    </div>
+    <span class="grade-chip">${escapeHtml(lesson.grade || "학년 미정")}</span>
+    <strong class="capacity-text">${escapeHtml(capacityText(lesson))}</strong>
+    ${lesson.place ? `<small class="place-text">${escapeHtml(lesson.place)}</small>` : ""}
   `;
   return card;
 }
 
+function renderTimetableSection(title, days, lessons) {
+  const sectionLessons = lessons.filter((lesson) => days.includes(lesson.day));
+  if (!sectionLessons.length) return null;
 
-function renderMobileSchedule(lessons) {
-  const list = document.createElement("div");
-  list.className = "mobile-schedule-list";
+  const slots = makeTimeSlots(sectionLessons);
+  if (!slots.length) return null;
 
-  const activeLabel = categories.find((category) => category.id === activeCategory)?.label || "선택 탭";
+  const section = document.createElement("section");
+  section.className = "board-section";
+
   const heading = document.createElement("div");
-  heading.className = "mobile-schedule-heading";
-  heading.innerHTML = `<strong>${escapeHtml(activeLabel)} 시간표</strong><span>${lessons.length}개 수업</span>`;
-  list.append(heading);
-
-  dayOrder.forEach((day) => {
-    const dayLessons = lessons.filter((lesson) => lesson.day === day).sort(byTime);
-    if (!dayLessons.length) return;
-
-    const section = document.createElement("section");
-    section.className = "mobile-day-section";
-    section.innerHTML = `<h3>${escapeHtml(day)}요일</h3>`;
-
-    dayLessons.forEach((lesson) => {
-      const card = document.createElement("article");
-      card.className = "mobile-lesson-card";
-      card.innerHTML = `
-        <div class="mobile-time"><strong>${escapeHtml(lesson.startTime || "--:--")}</strong><span>${escapeHtml(lesson.endTime || "--:--")}</span></div>
-        <div class="mobile-lesson-body">
-          <p class="lesson-name">${escapeHtml(lesson.name || "수업명 미입력")}</p>
-          <div class="lesson-meta compact">
-            <span class="pill">${escapeHtml(lesson.grade || "학년 미정")}</span>
-            <span class="pill capacity ${capacityClass(lesson)}">${escapeHtml(capacityText(lesson))}</span>
-            ${lesson.place ? `<span class="pill place">📍 ${escapeHtml(lesson.place)}</span>` : ""}
-          </div>
-        </div>
-      `;
-      section.append(card);
-    });
-
-    list.append(section);
-  });
-
-  return list;
-}
-
-function renderTimetable(lessons) {
-  const filteredLessons = lessons.filter((lesson) => lesson.category === activeCategory).sort(byDayAndTime);
-  const slots = makeTimeSlots(filteredLessons);
-  board.innerHTML = "";
-
-  if (!filteredLessons.length || !slots.length) {
-    emptyState.hidden = false;
-    emptyState.textContent = `${categories.find((category) => category.id === activeCategory)?.label || "선택한 탭"} 시간표에 등록된 수업이 없습니다.`;
-    return;
-  }
-
-  emptyState.hidden = true;
+  heading.className = "board-section-heading";
+  heading.innerHTML = `<strong>🗓️ ${escapeHtml(title)}</strong><span>${escapeHtml(categoryInfo().label)} ${sectionLessons.length}개</span>`;
+  section.append(heading);
 
   const scroller = document.createElement("div");
   scroller.className = "timetable-scroller";
 
   const table = document.createElement("table");
-  table.className = "timetable";
+  table.className = "timetable board-timetable";
   table.innerHTML = `
     <thead>
       <tr>
         <th scope="col" class="time-head">시간</th>
-        ${dayOrder.map((day) => `<th scope="col">${day}요일</th>`).join("")}
+        ${days.map((day) => `<th scope="col">${day}</th>`).join("")}
       </tr>
     </thead>
     <tbody></tbody>
@@ -232,18 +223,16 @@ function renderTimetable(lessons) {
     const timeCell = document.createElement("th");
     timeCell.scope = "row";
     timeCell.className = "time-cell";
-    timeCell.innerHTML = `<strong>${escapeHtml(slot.startTime)}</strong><span>${escapeHtml(slot.endTime)}</span>`;
+    timeCell.innerHTML = `<strong>${escapeHtml(slot.startTime)}~${escapeHtml(slot.endTime)}</strong>`;
     row.append(timeCell);
 
-    dayOrder.forEach((day) => {
+    days.forEach((day) => {
       const cell = document.createElement("td");
-      const cellLessons = filteredLessons.filter(
-        (lesson) => lesson.day === day && lesson.startTime === slot.startTime && lesson.endTime === slot.endTime
-      );
+      const cellLessons = sectionLessons.filter((lesson) => lesson.day === day && lessonInSlot(lesson, slot)).sort(byTime);
 
       if (!cellLessons.length) {
         cell.className = "empty-cell";
-        cell.textContent = "-";
+        cell.innerHTML = "";
       } else {
         const stack = document.createElement("div");
         stack.className = "cell-stack";
@@ -258,8 +247,27 @@ function renderTimetable(lessons) {
   });
 
   scroller.append(table);
-  board.append(scroller);
-  board.append(renderMobileSchedule(filteredLessons));
+  section.append(scroller);
+  return section;
+}
+
+function renderTimetable(lessons) {
+  const filteredLessons = lessons.filter((lesson) => lesson.category === activeCategory).sort(byDayAndTime);
+  board.innerHTML = "";
+
+  if (!filteredLessons.length) {
+    emptyState.hidden = false;
+    emptyState.textContent = `${categoryInfo().label} 시간표에 등록된 수업이 없습니다.`;
+    return;
+  }
+
+  emptyState.hidden = true;
+
+  const weekdaySection = renderTimetableSection("평일 수업 (월~금)", weekdayOrder, filteredLessons);
+  const weekendSection = renderTimetableSection("주말 수업 (토~일)", weekendOrder, filteredLessons);
+
+  if (weekdaySection) board.append(weekdaySection);
+  if (weekendSection) board.append(weekendSection);
 }
 
 function render(data) {
@@ -283,21 +291,19 @@ async function loadSchedule() {
     const response = await fetch("/.netlify/functions/schedule", { cache: "no-store" });
     if (!response.ok) throw new Error(`시간표 API 오류 ${response.status}`);
     latestData = await response.json();
-    usingFallback = false;
     render(latestData);
     liveDot.classList.remove("offline");
     connectionWarning.hidden = true;
-    lastUpdated.textContent = `방금 업데이트됨 ${new Date().toLocaleTimeString("ko-KR")}`;
+    lastUpdated.textContent = "연결됨";
   } catch (error) {
     liveDot.classList.add("offline");
     lastUpdated.textContent = "연결 재시도 중";
 
     if (!latestData) {
-      usingFallback = true;
       latestData = fallbackSchedule;
       render(fallbackSchedule);
       connectionWarning.hidden = false;
-      connectionWarning.textContent = "현재 시간표 저장 서버와 연결되지 않아 예시 시간표를 표시하고 있습니다. 관리자 저장 기능을 사용하려면 Netlify Functions 배포 상태를 확인해 주세요.";
+      connectionWarning.textContent = "현재 시간표 저장 서버와 연결되지 않아 예시 시간표를 표시하고 있습니다.";
     }
   }
 }

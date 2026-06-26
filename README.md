@@ -1,7 +1,51 @@
-# DO SPORTS 실시간 시간표 v7
+# DO SPORTS 실시간 시간표 v9
 
 Netlify + GitHub로 배포하는 DO SPORTS 실시간 시간표입니다.
-관리자 화면에서 제목, 설명, 공지사항, 버튼 링크, 농구/축구/키즈 시간표를 직접 수정할 수 있습니다.
+
+## v9 변경점
+
+- 학부모 화면을 예시 이미지처럼 어두운 보드형 시간표 디자인으로 변경
+- 상단을 `DO SPORTS 잠실점 시간표` 형태의 간단한 헤더로 정리
+- 연결 상태 표시와 관리자 편집 버튼 추가
+- 공지사항 바를 노란색 강조형으로 변경
+- 농구교실 / 축구교실 / 키즈스포츠 탭을 보드형 버튼으로 변경
+- 평일 수업은 월~금 표 형태로 표시
+- 토/일 수업이 있으면 주말 수업 표가 별도로 표시
+- 수업 카드 색상 자동 구분
+  - 농구/오픈반: 파란색
+  - 모집중/축구/비기너: 초록색
+  - 유치부/키즈/결스/심화: 자주색
+- 모바일에서도 카드형보다 시간표 보드 형태가 유지되도록 조정
+
+## GitHub 업로드 구조
+
+GitHub 저장소 첫 화면에 아래 항목이 바로 보여야 합니다.
+
+```text
+netlify
+public
+README.md
+netlify.toml
+package.json
+```
+
+`academy-live-schedule-v9` 폴더 자체를 올리지 말고, 그 안의 파일과 폴더를 올리세요.
+
+## Netlify 환경변수
+
+기존과 동일하게 아래 3개가 필요합니다.
+
+```text
+ADMIN_PASSWORD
+NETLIFY_SITE_ID
+NETLIFY_BLOBS_TOKEN
+```
+
+환경변수 수정 후에는 반드시 Netlify에서 재배포하세요.
+
+```text
+Deploys → Trigger deploy → Deploy site
+```
 
 ## 주소
 
@@ -9,110 +53,20 @@ Netlify + GitHub로 배포하는 DO SPORTS 실시간 시간표입니다.
 - 관리자 화면: `/admin`
 - 저장 함수 확인: `/.netlify/functions/schedule`
 
-## 필수 Netlify 환경변수
+## 관리자에서 수정 가능한 항목
 
-Netlify 프로젝트에서 아래 환경변수를 추가해야 저장이 됩니다.
-
-### 1. ADMIN_PASSWORD
-
-관리자 화면에서 입력할 비밀번호입니다.
-
-```text
-Key: ADMIN_PASSWORD
-Value: 원하는 관리자 비밀번호
-```
-
-### 2. NETLIFY_SITE_ID
-
-Netlify 프로젝트의 Site ID입니다.
-
-찾는 곳:
-
-```text
-Project configuration → General → Site details → Site ID
-```
-
-등록 예시:
-
-```text
-Key: NETLIFY_SITE_ID
-Value: 사이트 ID 값
-```
-
-### 3. NETLIFY_BLOBS_TOKEN
-
-Netlify Personal access token입니다.
-
-만드는 곳:
-
-```text
-Netlify 오른쪽 위 프로필 → User settings → Applications → Personal access tokens → New access token
-```
-
-등록 예시:
-
-```text
-Key: NETLIFY_BLOBS_TOKEN
-Value: 생성한 personal access token
-```
-
-> 토큰은 절대 프론트엔드 코드에 넣지 마세요. Netlify Environment variables에만 넣어야 합니다.
-
-## 환경변수 추가 후 필수 작업
-
-환경변수를 추가하거나 수정한 뒤에는 반드시 다시 배포해야 합니다.
-
-```text
-Deploys → Trigger deploy → Deploy site
-```
-
-## GitHub 파일 구조
-
-GitHub 저장소 첫 화면에 아래 파일과 폴더가 바로 보여야 합니다.
-
-```text
-public
-netlify
-package.json
-netlify.toml
-README.md
-```
-
-아래처럼 상위 폴더가 한 번 더 들어가 있으면 안 됩니다.
-
-```text
-academy-live-schedule-v7
-  ├─ public
-  ├─ netlify
-  ├─ package.json
-  └─ netlify.toml
-```
-
-## 저장 오류가 뜰 때
-
-관리자 페이지에서 저장할 때 아래 오류가 나오면:
-
-```text
-The environment has not been configured to use Netlify Blobs...
-```
-
-Netlify 환경변수에 아래 두 개가 빠진 것입니다.
-
-```text
-NETLIFY_SITE_ID
-NETLIFY_BLOBS_TOKEN
-```
-
-추가 후 다시 배포하세요.
-
-## v8 모바일 최적화 변경사항
-
-- 모바일 학부모 화면에서는 가로 스크롤 표 대신 요일별 카드형 시간표가 표시됩니다.
-- 농구/축구/키즈 탭은 모바일 상단에 고정되어 빠르게 전환할 수 있습니다.
-- 상단 로고, 제목, 상담 버튼, 공지사항을 모바일 폭에 맞게 축소했습니다.
-- 관리자 화면도 모바일에서 입력칸이 2열/1열 카드형으로 정리되며, 저장 버튼이 하단에 고정됩니다.
-- 데스크톱에서는 기존 시간표 표 형태를 유지합니다.
-
-## 비용 관련 메모
-
-Netlify Free 플랜 안에서 운영할 수 있도록 설계되어 있습니다. 다만 방문자 수, 2초 자동 새로고침 요청 수, 저장 횟수가 크게 늘면 Netlify 사용량 크레딧을 소모할 수 있습니다. 일반 학원 시간표 수준의 소규모 사용이라면 무료 한도 안에서 운영될 가능성이 높습니다.
+- 학원명
+- 메인 제목
+- 메인 설명
+- 공지사항
+- 개설 희망 버튼명/링크
+- 반 모으기 버튼명/링크
+- 상담 및 신청서 작성 버튼명/링크
+- 수업 종목
+- 요일
+- 시작/종료 시간
+- 수업명
+- 학년
+- 정원
+- 현재원
+- 장소
