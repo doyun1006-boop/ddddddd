@@ -49,32 +49,11 @@
           </label>
         </details>
 
-        <details class="settings-group">
+        <details class="settings-group" open>
           <summary>상단 버튼 / 링크</summary>
-          <label>
-            개설 희망 버튼명
-            <input id="openingLinkLabelInput" type="text" placeholder="개설 희망" />
-          </label>
-          <label>
-            개설 희망 링크
-            <input id="openingLinkUrlInput" type="url" placeholder="https://classroute-site.netlify.app/" />
-          </label>
-          <label>
-            반 모으기 버튼명
-            <input id="gatheringLinkLabelInput" type="text" placeholder="반 모으기" />
-          </label>
-          <label>
-            반 모으기 링크
-            <input id="gatheringLinkUrlInput" type="url" placeholder="https://classroute-site.netlify.app/" />
-          </label>
-          <label>
-            상담 버튼명
-            <input id="counselLinkLabelInput" type="text" placeholder="상담 및 신청서 작성" />
-          </label>
-          <label>
-            상담 및 신청서 링크
-            <input id="counselLinkUrlInput" type="url" placeholder="https://dosportslink.netlify.app/" />
-          </label>
+          <p class="field-helper">학부모 화면 상단에 보일 버튼을 직접 추가·삭제할 수 있습니다. 예: 상담 신청, 체험 신청, 개설 희망, 반 모으기</p>
+          <div id="linkEditorList" class="link-editor-list"></div>
+          <button id="addLinkBtn" type="button" class="secondary-action">상담/신청 버튼 추가</button>
         </details>
 
         <div class="toolbar">

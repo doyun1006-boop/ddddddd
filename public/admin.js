@@ -5,12 +5,8 @@ const academyNameInput = document.querySelector("#academyNameInput");
 const heroTitleInput = document.querySelector("#heroTitleInput");
 const heroDescriptionInput = document.querySelector("#heroDescriptionInput");
 const noticeInput = document.querySelector("#noticeInput");
-const openingLinkLabelInput = document.querySelector("#openingLinkLabelInput");
-const openingLinkUrlInput = document.querySelector("#openingLinkUrlInput");
-const gatheringLinkLabelInput = document.querySelector("#gatheringLinkLabelInput");
-const gatheringLinkUrlInput = document.querySelector("#gatheringLinkUrlInput");
-const counselLinkLabelInput = document.querySelector("#counselLinkLabelInput");
-const counselLinkUrlInput = document.querySelector("#counselLinkUrlInput");
+const linkEditorList = document.querySelector("#linkEditorList");
+const addLinkBtn = document.querySelector("#addLinkBtn");
 const addClassBtn = document.querySelector("#addClassBtn");
 const saveBtn = document.querySelector("#saveBtn");
 const list = document.querySelector("#classEditorList");
@@ -25,17 +21,18 @@ const categories = [
   { id: "kids", label: "키즈" }
 ];
 
+const defaultActionLinks = [
+  { id: "opening", label: "개설 희망", url: "https://classroute-site.netlify.app/", style: "secondary" },
+  { id: "gathering", label: "반 모으기", url: "https://classroute-site.netlify.app/", style: "secondary" },
+  { id: "counsel", label: "상담 및 신청서 작성", url: "https://dosportslink.netlify.app/", style: "primary" }
+];
+
 const defaults = {
   academyName: "DO SPORTS ACADEMY",
   heroTitle: "농구 · 축구 · 키즈 수업을 한눈에 보는 시간표",
   heroDescription: "수업 시간, 학년, 정원, 장소를 확인하시고 변경 사항은 최대 2초 안에 자동 반영됩니다.",
   notice: "시간표는 수시로 변경될 수 있습니다. 장소와 정원 현황을 꼭 확인해 주세요.",
-  openingLinkLabel: "개설 희망",
-  openingLinkUrl: "https://classroute-site.netlify.app/",
-  gatheringLinkLabel: "반 모으기",
-  gatheringLinkUrl: "https://classroute-site.netlify.app/",
-  counselLinkLabel: "상담 및 신청서 작성",
-  counselLinkUrl: "https://dosportslink.netlify.app/"
+  actionLinks: defaultActionLinks
 };
 
 const fallbackLessons = [
@@ -51,6 +48,7 @@ const fallbackLessons = [
 let adminPassword = sessionStorage.getItem("academyAdminPassword") || "";
 let activeCategory = sessionStorage.getItem("academyAdminCategory") || "basketball";
 let lessons = [];
+let actionLinks = [...defaultActionLinks];
 
 function uid() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -63,6 +61,31 @@ function escapeAttr(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function safeUrl(value, fallback = "https://dosportslink.netlify.app/") {
+  const url = String(value || "").trim();
+  return url.startsWith("https://") || url.startsWith("http://") ? url : fallback;
+}
+
+function normalizeActionLinks(data = {}) {
+  const legacyLinks = [
+    { id: "opening", label: data.openingLinkLabel || "개설 희망", url: data.openingLinkUrl || "https://classroute-site.netlify.app/", style: "secondary" },
+    { id: "gathering", label: data.gatheringLinkLabel || "반 모으기", url: data.gatheringLinkUrl || "https://classroute-site.netlify.app/", style: "secondary" },
+    { id: "counsel", label: data.counselLinkLabel || "상담 및 신청서 작성", url: data.counselLinkUrl || "https://dosportslink.netlify.app/", style: "primary" }
+  ];
+
+  const source = Array.isArray(data.actionLinks) && data.actionLinks.length ? data.actionLinks : legacyLinks;
+
+  return source.slice(0, 10).map((link, index) => {
+    const fallback = defaultActionLinks[index] || defaultActionLinks[defaultActionLinks.length - 1];
+    return {
+      id: link.id || uid(),
+      label: link.label || fallback.label || "바로가기",
+      url: safeUrl(link.url, fallback.url),
+      style: link.style === "primary" ? "primary" : "secondary"
+    };
+  });
 }
 
 function normalizeLesson(lesson) {
@@ -96,6 +119,15 @@ function newLesson() {
   };
 }
 
+function newActionLink() {
+  return {
+    id: uid(),
+    label: "상담 신청",
+    url: "https://dosportslink.netlify.app/",
+    style: "secondary"
+  };
+}
+
 function setMessage(text, isError = false) {
   adminMessage.textContent = text;
   adminMessage.style.color = isError ? "#ef4444" : "#16a34a";
@@ -116,12 +148,69 @@ function readRow(row) {
   };
 }
 
+function readLinkRow(row) {
+  return {
+    id: row.dataset.id,
+    label: row.querySelector("[data-link-field='label']").value.trim(),
+    url: row.querySelector("[data-link-field='url']").value.trim(),
+    style: row.querySelector("[data-link-field='style']").value
+  };
+}
+
 function updateFromInputs() {
   const visibleRows = [...list.querySelectorAll(".class-row")];
-  if (!visibleRows.length) return;
+  if (visibleRows.length) {
+    const updatedById = new Map(visibleRows.map((row) => [row.dataset.id, normalizeLesson(readRow(row))]));
+    lessons = lessons.map((lesson) => updatedById.get(lesson.id) || lesson);
+  }
 
-  const updatedById = new Map(visibleRows.map((row) => [row.dataset.id, normalizeLesson(readRow(row))]));
-  lessons = lessons.map((lesson) => updatedById.get(lesson.id) || lesson);
+  actionLinks = [...linkEditorList.querySelectorAll(".link-row")]
+    .map(readLinkRow)
+    .filter((link) => link.label && link.url)
+    .map((link) => ({
+      id: link.id || uid(),
+      label: link.label,
+      url: link.url,
+      style: link.style === "primary" ? "primary" : "secondary"
+    }));
+}
+
+function renderLinkEditor() {
+  linkEditorList.innerHTML = "";
+
+  if (!actionLinks.length) {
+    const empty = document.createElement("div");
+    empty.className = "editor-empty small-empty";
+    empty.textContent = "등록된 버튼이 없습니다. 아래 버튼을 눌러 상담/신청 버튼을 추가해 주세요.";
+    linkEditorList.append(empty);
+    return;
+  }
+
+  actionLinks.forEach((link, index) => {
+    const row = document.createElement("div");
+    row.className = "link-row";
+    row.dataset.id = link.id || uid();
+    row.innerHTML = `
+      <label>버튼명
+        <input data-link-field="label" type="text" value="${escapeAttr(link.label)}" placeholder="예: 상담 신청" />
+      </label>
+      <label>연결 링크
+        <input data-link-field="url" type="url" value="${escapeAttr(link.url)}" placeholder="https://..." />
+      </label>
+      <label>강조
+        <select data-link-field="style">
+          <option value="secondary" ${link.style !== "primary" ? "selected" : ""}>일반</option>
+          <option value="primary" ${link.style === "primary" ? "selected" : ""}>강조</option>
+        </select>
+      </label>
+      <div class="row-actions link-actions">
+        <button type="button" data-link-action="up" ${index === 0 ? "disabled" : ""}>↑</button>
+        <button type="button" data-link-action="down" ${index === actionLinks.length - 1 ? "disabled" : ""}>↓</button>
+        <button type="button" class="danger" data-link-action="remove">삭제</button>
+      </div>
+    `;
+    linkEditorList.append(row);
+  });
 }
 
 function renderAdminTabs() {
@@ -141,6 +230,7 @@ function renderAdminTabs() {
 function renderEditor() {
   list.innerHTML = "";
   renderAdminTabs();
+  renderLinkEditor();
 
   const filteredLessons = lessons
     .filter((lesson) => lesson.category === activeCategory)
@@ -210,12 +300,7 @@ async function loadSchedule() {
     heroTitleInput.value = data.heroTitle || defaults.heroTitle;
     heroDescriptionInput.value = data.heroDescription || defaults.heroDescription;
     noticeInput.value = data.notice || "";
-    openingLinkLabelInput.value = data.openingLinkLabel || defaults.openingLinkLabel;
-    openingLinkUrlInput.value = data.openingLinkUrl || defaults.openingLinkUrl;
-    gatheringLinkLabelInput.value = data.gatheringLinkLabel || defaults.gatheringLinkLabel;
-    gatheringLinkUrlInput.value = data.gatheringLinkUrl || defaults.gatheringLinkUrl;
-    counselLinkLabelInput.value = data.counselLinkLabel || defaults.counselLinkLabel;
-    counselLinkUrlInput.value = data.counselLinkUrl || defaults.counselLinkUrl;
+    actionLinks = normalizeActionLinks(data);
     lessons = (data.lessons || []).map(normalizeLesson);
     renderEditor();
   } catch (error) {
@@ -223,12 +308,7 @@ async function loadSchedule() {
     heroTitleInput.value = defaults.heroTitle;
     heroDescriptionInput.value = defaults.heroDescription;
     noticeInput.value = defaults.notice;
-    openingLinkLabelInput.value = defaults.openingLinkLabel;
-    openingLinkUrlInput.value = defaults.openingLinkUrl;
-    gatheringLinkLabelInput.value = defaults.gatheringLinkLabel;
-    gatheringLinkUrlInput.value = defaults.gatheringLinkUrl;
-    counselLinkLabelInput.value = defaults.counselLinkLabel;
-    counselLinkUrlInput.value = defaults.counselLinkUrl;
+    actionLinks = normalizeActionLinks(defaults);
     lessons = fallbackLessons.map(normalizeLesson);
     renderEditor();
     throw new Error("시간표 저장 서버와 연결되지 않았습니다. GitHub 파일 구조와 Netlify Functions 배포 상태를 확인해 주세요.");
@@ -242,12 +322,12 @@ async function saveSchedule() {
     heroTitle: heroTitleInput.value.trim() || defaults.heroTitle,
     heroDescription: heroDescriptionInput.value.trim() || defaults.heroDescription,
     notice: noticeInput.value.trim(),
-    openingLinkLabel: openingLinkLabelInput.value.trim() || defaults.openingLinkLabel,
-    openingLinkUrl: openingLinkUrlInput.value.trim() || defaults.openingLinkUrl,
-    gatheringLinkLabel: gatheringLinkLabelInput.value.trim() || defaults.gatheringLinkLabel,
-    gatheringLinkUrl: gatheringLinkUrlInput.value.trim() || defaults.gatheringLinkUrl,
-    counselLinkLabel: counselLinkLabelInput.value.trim() || defaults.counselLinkLabel,
-    counselLinkUrl: counselLinkUrlInput.value.trim() || defaults.counselLinkUrl,
+    actionLinks: actionLinks.map((link) => ({
+      id: link.id || uid(),
+      label: link.label,
+      url: link.url,
+      style: link.style === "primary" ? "primary" : "secondary"
+    })),
     lessons: lessons.map(normalizeLesson)
   };
 
@@ -288,12 +368,42 @@ addClassBtn.addEventListener("click", () => {
   renderEditor();
 });
 
+addLinkBtn.addEventListener("click", () => {
+  updateFromInputs();
+  actionLinks.push(newActionLink());
+  renderEditor();
+});
+
 saveBtn.addEventListener("click", async () => {
   try {
     await saveSchedule();
   } catch (error) {
     setMessage(error.message, true);
   }
+});
+
+linkEditorList.addEventListener("click", (event) => {
+  const action = event.target.dataset.linkAction;
+  if (!action) return;
+
+  updateFromInputs();
+  const row = event.target.closest(".link-row");
+  const index = actionLinks.findIndex((link) => link.id === row.dataset.id);
+  if (index < 0) return;
+
+  if (action === "remove") {
+    actionLinks.splice(index, 1);
+  }
+
+  if (action === "up" && index > 0) {
+    [actionLinks[index - 1], actionLinks[index]] = [actionLinks[index], actionLinks[index - 1]];
+  }
+
+  if (action === "down" && index < actionLinks.length - 1) {
+    [actionLinks[index + 1], actionLinks[index]] = [actionLinks[index], actionLinks[index + 1]];
+  }
+
+  renderEditor();
 });
 
 list.addEventListener("click", (event) => {

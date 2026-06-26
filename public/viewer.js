@@ -5,9 +5,7 @@ const connectionWarning = document.querySelector("#connectionWarning");
 const academyName = document.querySelector("#academyName");
 const heroTitle = document.querySelector("#heroTitle");
 const heroDescription = document.querySelector("#heroDescription");
-const openingLink = document.querySelector("#openingLink");
-const gatheringLink = document.querySelector("#gatheringLink");
-const counselLink = document.querySelector("#counselLink");
+const quickLinkRow = document.querySelector("#quickLinkRow");
 const lastUpdated = document.querySelector("#lastUpdated");
 const liveDot = document.querySelector("#liveDot");
 const categoryTabs = document.querySelector("#categoryTabs");
@@ -31,7 +29,12 @@ const defaults = {
   gatheringLinkLabel: "반 모으기",
   gatheringLinkUrl: "https://classroute-site.netlify.app/",
   counselLinkLabel: "상담 및 신청서 작성",
-  counselLinkUrl: "https://dosportslink.netlify.app/"
+  counselLinkUrl: "https://dosportslink.netlify.app/",
+  actionLinks: [
+    { id: "opening", label: "개설 희망", url: "https://classroute-site.netlify.app/", style: "secondary" },
+    { id: "gathering", label: "반 모으기", url: "https://classroute-site.netlify.app/", style: "secondary" },
+    { id: "counsel", label: "상담 및 신청서 작성", url: "https://dosportslink.netlify.app/", style: "primary" }
+  ]
 };
 
 const fallbackSchedule = {
@@ -65,6 +68,7 @@ function setStorageItem(key, value) {
 
 let activeCategory = getStorageItem("academyActiveCategory", "basketball");
 let latestData = null;
+let latestDataHash = "";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -89,11 +93,42 @@ function safeUrl(value, fallback) {
   return url.startsWith("https://") || url.startsWith("http://") ? url : fallback;
 }
 
-function updateLink(element, label, url, fallbackLabel, fallbackUrl) {
-  if (!element) return;
-  element.textContent = label || fallbackLabel;
-  element.href = safeUrl(url, fallbackUrl);
-  element.hidden = false;
+function normalizeActionLinks(data = {}) {
+  const legacyLinks = [
+    { id: "opening", label: data.openingLinkLabel || defaults.openingLinkLabel, url: data.openingLinkUrl || defaults.openingLinkUrl, style: "secondary" },
+    { id: "gathering", label: data.gatheringLinkLabel || defaults.gatheringLinkLabel, url: data.gatheringLinkUrl || defaults.gatheringLinkUrl, style: "secondary" },
+    { id: "counsel", label: data.counselLinkLabel || defaults.counselLinkLabel, url: data.counselLinkUrl || defaults.counselLinkUrl, style: "primary" }
+  ];
+
+  const source = Array.isArray(data.actionLinks) && data.actionLinks.length ? data.actionLinks : legacyLinks;
+  return source
+    .map((link, index) => {
+      const fallback = defaults.actionLinks[index] || defaults.actionLinks[defaults.actionLinks.length - 1];
+      return {
+        id: link.id || `link-${index}`,
+        label: link.label || fallback.label || "바로가기",
+        url: safeUrl(link.url, fallback.url),
+        style: link.style === "primary" ? "primary" : "secondary"
+      };
+    })
+    .filter((link) => link.label && link.url);
+}
+
+function renderActionLinks(data) {
+  if (!quickLinkRow) return;
+  const links = normalizeActionLinks(data);
+  quickLinkRow.innerHTML = "";
+  quickLinkRow.hidden = !links.length;
+
+  links.forEach((link) => {
+    const anchor = document.createElement("a");
+    anchor.className = `quick-link ${link.style === "primary" ? "primary" : ""}`;
+    anchor.href = link.url;
+    anchor.target = "_blank";
+    anchor.rel = "noreferrer";
+    anchor.textContent = link.label;
+    quickLinkRow.append(anchor);
+  });
 }
 
 function byTime(a, b) {
@@ -272,6 +307,10 @@ function renderTimetable(lessons) {
   if (weekendSection) board.append(weekendSection);
 }
 
+function scheduleHash(data) {
+  return JSON.stringify(data || {});
+}
+
 function render(data) {
   academyName.textContent = data.academyName || defaults.academyName;
   heroTitle.textContent = data.heroTitle || defaults.heroTitle;
@@ -279,9 +318,7 @@ function render(data) {
   notice.hidden = !data.notice;
   notice.textContent = data.notice || "";
 
-  updateLink(openingLink, data.openingLinkLabel, data.openingLinkUrl, defaults.openingLinkLabel, defaults.openingLinkUrl);
-  updateLink(gatheringLink, data.gatheringLinkLabel, data.gatheringLinkUrl, defaults.gatheringLinkLabel, defaults.gatheringLinkUrl);
-  updateLink(counselLink, data.counselLinkLabel, data.counselLinkUrl, defaults.counselLinkLabel, defaults.counselLinkUrl);
+  renderActionLinks(data);
 
   const lessons = [...(data.lessons || [])].map(normalizeLesson).sort(byDayAndTime);
   renderTabs(lessons);
@@ -292,8 +329,19 @@ async function loadSchedule() {
   try {
     const response = await fetch("/.netlify/functions/schedule", { cache: "no-store" });
     if (!response.ok) throw new Error(`시간표 API 오류 ${response.status}`);
-    latestData = await response.json();
-    render(latestData);
+    const incomingData = await response.json();
+    const incomingHash = scheduleHash(incomingData);
+
+    // 2초마다 데이터를 확인하되, 내용이 같으면 시간표 DOM을 다시 그리지 않습니다.
+    // 모바일에서 시간표를 보고 있는 중에 화면이 처음 위치로 튀는 현상을 막기 위한 처리입니다.
+    if (incomingHash !== latestDataHash) {
+      latestData = incomingData;
+      latestDataHash = incomingHash;
+      render(latestData);
+    } else {
+      latestData = incomingData;
+    }
+
     liveDot.classList.remove("offline");
     connectionWarning.hidden = true;
     lastUpdated.textContent = "연결됨";
@@ -303,6 +351,7 @@ async function loadSchedule() {
 
     if (!latestData) {
       latestData = fallbackSchedule;
+      latestDataHash = scheduleHash(fallbackSchedule);
       render(fallbackSchedule);
       connectionWarning.hidden = false;
       connectionWarning.textContent = "현재 시간표 저장 서버와 연결되지 않아 예시 시간표를 표시하고 있습니다.";

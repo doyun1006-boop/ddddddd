@@ -4,6 +4,12 @@ const { randomUUID } = require("crypto");
 const allowedCategories = ["basketball", "soccer", "kids"];
 const allowedDays = ["월", "화", "수", "목", "금", "토", "일"];
 
+const defaultActionLinks = [
+  { id: "opening", label: "개설 희망", url: "https://classroute-site.netlify.app/", style: "secondary" },
+  { id: "gathering", label: "반 모으기", url: "https://classroute-site.netlify.app/", style: "secondary" },
+  { id: "counsel", label: "상담 및 신청서 작성", url: "https://dosportslink.netlify.app/", style: "primary" }
+];
+
 const defaults = {
   academyName: "DO SPORTS ACADEMY",
   heroTitle: "농구 · 축구 · 키즈 수업을 한눈에 보는 시간표",
@@ -14,7 +20,8 @@ const defaults = {
   gatheringLinkLabel: "반 모으기",
   gatheringLinkUrl: "https://classroute-site.netlify.app/",
   counselLinkLabel: "상담 및 신청서 작성",
-  counselLinkUrl: "https://dosportslink.netlify.app/"
+  counselLinkUrl: "https://dosportslink.netlify.app/",
+  actionLinks: defaultActionLinks
 };
 
 const seedSchedule = {
@@ -54,6 +61,31 @@ function safeUrl(value, fallback) {
   return url.startsWith("https://") || url.startsWith("http://") ? url : fallback;
 }
 
+function legacyActionLinks(input = {}) {
+  return [
+    { id: "opening", label: input.openingLinkLabel || defaults.openingLinkLabel, url: input.openingLinkUrl || defaults.openingLinkUrl, style: "secondary" },
+    { id: "gathering", label: input.gatheringLinkLabel || defaults.gatheringLinkLabel, url: input.gatheringLinkUrl || defaults.gatheringLinkUrl, style: "secondary" },
+    { id: "counsel", label: input.counselLinkLabel || defaults.counselLinkLabel, url: input.counselLinkUrl || defaults.counselLinkUrl, style: "primary" }
+  ];
+}
+
+function sanitizeActionLinks(input = {}) {
+  const source = Array.isArray(input.actionLinks) && input.actionLinks.length ? input.actionLinks : legacyActionLinks(input);
+
+  return source
+    .slice(0, 10)
+    .map((link, index) => {
+      const fallback = defaultActionLinks[index] || defaultActionLinks[defaultActionLinks.length - 1];
+      return {
+        id: String(link.id || randomUUID()).slice(0, 80),
+        label: String(link.label || fallback.label || "바로가기").slice(0, 50),
+        url: safeUrl(link.url, fallback.url || defaults.counselLinkUrl),
+        style: link.style === "primary" ? "primary" : "secondary"
+      };
+    })
+    .filter((link) => link.label && link.url);
+}
+
 function safeNumber(value) {
   const number = Number(value || 0);
   return Number.isFinite(number) && number >= 0 ? number : 0;
@@ -71,6 +103,7 @@ function sanitizeSchedule(input = {}) {
     gatheringLinkUrl: safeUrl(input.gatheringLinkUrl, defaults.gatheringLinkUrl),
     counselLinkLabel: String(input.counselLinkLabel || defaults.counselLinkLabel).slice(0, 60),
     counselLinkUrl: safeUrl(input.counselLinkUrl, defaults.counselLinkUrl),
+    actionLinks: sanitizeActionLinks(input),
     lessons: Array.isArray(input.lessons)
       ? input.lessons.map((lesson) => ({
           id: String(lesson.id || randomUUID()).slice(0, 80),

@@ -2035,3 +2035,267 @@ button.danger {
     font-size: 9px;
   }
 }
+
+/* v11: mobile timetable fit mode - no sideways snap-back */
+@media (max-width: 760px) {
+  html,
+  body {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .schedule-header,
+  .board-shell {
+    width: calc(100% - 8px);
+  }
+
+  .schedule-header {
+    margin-top: 4px;
+  }
+
+  .board-shell {
+    gap: 7px;
+  }
+
+  .notice-bar {
+    border-radius: 8px;
+  }
+
+  .quick-link-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .quick-link {
+    min-height: 36px;
+    padding: 7px 5px;
+    border-radius: 8px;
+    font-size: 11px;
+    line-height: 1.15;
+  }
+
+  .board-tabs {
+    gap: 5px;
+  }
+
+  .board-tabs .tab-button {
+    min-height: 42px;
+    padding: 7px 4px;
+    border-radius: 8px;
+  }
+
+  .board-tabs .tab-button span {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .board-section-heading {
+    padding: 1px 0;
+  }
+
+  .board-section-heading strong {
+    font-size: 13px;
+  }
+
+  .board-style-page .timetable-scroller {
+    overflow-x: hidden;
+    border-radius: 7px;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .board-style-page .timetable {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .board-style-page .time-head,
+  .board-style-page .time-cell {
+    width: 43px;
+  }
+
+  .board-style-page .timetable thead th {
+    padding: 7px 1px;
+    font-size: 10px;
+    letter-spacing: -0.03em;
+  }
+
+  .board-style-page .time-cell {
+    padding: 5px 1px;
+  }
+
+  .board-style-page .time-cell strong {
+    font-size: 9px;
+    letter-spacing: -0.05em;
+    white-space: normal;
+  }
+
+  .board-style-page .timetable td {
+    height: 70px;
+    padding: 2px;
+  }
+
+  .board-style-page .cell-stack {
+    gap: 2px;
+  }
+
+  .board-style-page .timetable-lesson {
+    min-height: 60px;
+    gap: 2px;
+    padding: 4px 2px;
+    border-radius: 5px;
+  }
+
+  .board-style-page .lesson-time {
+    min-height: 14px;
+    padding: 1px 3px;
+    font-size: 7px;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+  }
+
+  .board-style-page .timetable-lesson .lesson-name {
+    font-size: 9px;
+    line-height: 1.08;
+    letter-spacing: -0.05em;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .board-style-page .grade-chip {
+    min-height: 13px;
+    max-width: 100%;
+    padding: 1px 3px;
+    border-radius: 4px;
+    font-size: 7px;
+    letter-spacing: -0.04em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .board-style-page .capacity-text {
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  .board-style-page .place-text {
+    max-width: 100%;
+    font-size: 7px;
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .board-style-page .mobile-schedule-list {
+    display: none !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .board-style-page .time-head,
+  .board-style-page .time-cell {
+    width: 38px;
+  }
+
+  .board-style-page .timetable thead th {
+    font-size: 9px;
+  }
+
+  .board-style-page .time-cell strong {
+    font-size: 8px;
+  }
+
+  .board-style-page .timetable td {
+    height: 64px;
+    padding: 1px;
+  }
+
+  .board-style-page .timetable-lesson {
+    min-height: 56px;
+    padding: 3px 1px;
+  }
+
+  .board-style-page .lesson-time {
+    font-size: 6.5px;
+    padding: 1px 2px;
+  }
+
+  .board-style-page .timetable-lesson .lesson-name {
+    font-size: 8px;
+  }
+
+  .board-style-page .grade-chip,
+  .board-style-page .place-text {
+    font-size: 6.5px;
+  }
+}
+
+/* v12: 관리자 버튼 추가/삭제 편집기 */
+.field-helper {
+  margin: -4px 0 12px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 700;
+}
+
+.link-editor-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.link-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.9fr) minmax(180px, 1.3fr) 90px auto;
+  gap: 8px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid #d8e2f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.link-row label {
+  margin: 0;
+  font-size: 13px;
+}
+
+.link-actions {
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.link-actions button {
+  min-height: 40px;
+  padding: 9px 10px;
+}
+
+.secondary-action {
+  width: 100%;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.small-empty {
+  padding: 16px 12px;
+  font-size: 13px;
+}
+
+.quick-link-row[hidden] {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .link-row {
+    grid-template-columns: 1fr;
+  }
+
+  .link-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
