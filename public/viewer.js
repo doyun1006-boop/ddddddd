@@ -73,25 +73,43 @@ let activeCategory = getStorageItem("academyActiveCategory", "basketball");
 let latestData = null;
 let latestDataHash = "";
 
-const zoomOptions = [0.9, 1, 1.15, 1.3];
-let timetableZoom = normalizeZoom(getStorageItem("academyTimetableZoom", "1"));
+const zoomOptions = [
+  { value: "fit", label: "전체보기" },
+  { value: "0.8", label: "80%" },
+  { value: "1", label: "100%" },
+  { value: "1.25", label: "125%" },
+  { value: "1.5", label: "150%" }
+];
 
-function normalizeZoom(value) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 1;
-  const nearest = zoomOptions.reduce((best, option) =>
-    Math.abs(option - numeric) < Math.abs(best - numeric) ? option : best
-  , 1);
-  return nearest;
+// v19: 기존 v18의 100% 저장값이 남아 있어도 새 버전에서는 전체보기부터 보이도록 별도 키를 사용합니다.
+let timetableZoomMode = normalizeZoomMode(getStorageItem("academyTimetableZoomModeV19", "fit"));
+
+function normalizeZoomMode(value) {
+  const raw = String(value || "fit").trim();
+  if (raw === "fit") return "fit";
+  const allowed = zoomOptions.map((option) => option.value);
+  return allowed.includes(raw) ? raw : "fit";
 }
 
-function zoomLabel(value) {
-  return `${Math.round(Number(value || 1) * 100)}%`;
+function getManualZoom(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : 1;
+}
+
+function resolveTimetableZoom(totalWidth) {
+  if (timetableZoomMode !== "fit") return getManualZoom(timetableZoomMode);
+
+  const viewportWidth = Math.max(260, Math.floor((board && board.clientWidth) || window.innerWidth || totalWidth));
+  const safeWidth = Math.max(220, viewportWidth - 4);
+  if (!totalWidth || totalWidth <= safeWidth) return 1;
+
+  // 전체 요일을 한 화면에 넣는 것이 목적이므로 모바일에서도 충분히 축소합니다.
+  return Math.max(0.16, Math.min(1, safeWidth / totalWidth));
 }
 
 function setTimetableZoom(value) {
-  timetableZoom = normalizeZoom(value);
-  setStorageItem("academyTimetableZoom", String(timetableZoom));
+  timetableZoomMode = normalizeZoomMode(value);
+  setStorageItem("academyTimetableZoomModeV19", timetableZoomMode);
   if (latestData) render(latestData);
 }
 
@@ -504,26 +522,36 @@ function renderTimetableSection(title, days, lessons) {
   heading.innerHTML = `<strong>🗓️ ${escapeHtml(title)}</strong><span>${escapeHtml(categoryInfo().label)} ${sectionLessons.length}개</span>`;
   section.append(heading);
 
+  const effectiveZoom = resolveTimetableZoom(layout.totalWidth);
+  const contentHeight = layout.headerHeight + layout.totalHeight;
+
   const controls = document.createElement("div");
   controls.className = "timetable-view-controls";
   controls.innerHTML = `
     <div class="view-zoom-group" aria-label="시간표 보기 크기">
-      <span>보기 크기</span>
+      <span>보기</span>
       ${zoomOptions.map((option) => `
-        <button type="button" class="view-zoom-button ${option === timetableZoom ? "active" : ""}" data-schedule-zoom="${option}">${zoomLabel(option)}</button>
+        <button type="button" class="view-zoom-button ${option.value === timetableZoomMode ? "active" : ""}" data-schedule-zoom="${option.value}">${escapeHtml(option.label)}</button>
       `).join("")}
+      <small>${timetableZoomMode === "fit" ? `현재 ${Math.round(effectiveZoom * 100)}%` : ""}</small>
     </div>
     <div class="day-jump-group" aria-label="요일 빠른 이동">
       <span>요일 이동</span>
       ${days.map((day, index) => `
-        <button type="button" class="day-jump-button" data-day-scroll="${Math.max(0, (layout.dayOffsets[index] || 0) - layout.timeColumnWidth)}">${escapeHtml(day)}</button>
+        <button type="button" class="day-jump-button" data-day-scroll="${Math.max(0, ((layout.dayOffsets[index] || 0) - layout.timeColumnWidth) * effectiveZoom)}">${escapeHtml(day)}</button>
       `).join("")}
     </div>
   `;
   section.append(controls);
 
   const scroller = document.createElement("div");
-  scroller.className = "timetable-scroller schedule-grid-scroller";
+  scroller.className = `timetable-scroller schedule-grid-scroller ${timetableZoomMode === "fit" ? "fit-mode" : "free-zoom-mode"}`;
+
+  const fitShell = document.createElement("div");
+  fitShell.className = "schedule-fit-shell";
+  fitShell.style.width = `${Math.ceil(layout.totalWidth * effectiveZoom)}px`;
+  fitShell.style.minWidth = `${Math.ceil(layout.totalWidth * effectiveZoom)}px`;
+  fitShell.style.height = `${Math.ceil(contentHeight * effectiveZoom)}px`;
 
   const grid = document.createElement("div");
   grid.className = "schedule-grid duration-timetable";
@@ -536,8 +564,10 @@ function renderTimetableSection(title, days, lessons) {
   grid.style.gridTemplateRows = `${layout.headerHeight}px ${layout.rowHeights.map((height) => `${height}px`).join(" ")}`;
   grid.style.width = `${layout.totalWidth}px`;
   grid.style.minWidth = `${layout.totalWidth}px`;
-  grid.style.zoom = String(timetableZoom);
-  grid.style.setProperty("--schedule-zoom", String(timetableZoom));
+  grid.style.height = `${contentHeight}px`;
+  grid.style.transform = `scale(${effectiveZoom})`;
+  grid.style.transformOrigin = "top left";
+  grid.style.setProperty("--schedule-zoom", String(effectiveZoom));
 
   const timeHead = document.createElement("div");
   timeHead.className = "grid-head time-head";
@@ -608,7 +638,8 @@ function renderTimetableSection(title, days, lessons) {
     grid.append(track);
   });
 
-  scroller.append(grid);
+  fitShell.append(grid);
+  scroller.append(fitShell);
   section.append(scroller);
   return section;
 }
@@ -696,7 +727,7 @@ board.addEventListener("click", (event) => {
   if (dayButton) {
     const section = dayButton.closest(".board-section");
     const scroller = section?.querySelector(".schedule-grid-scroller");
-    const targetLeft = Number(dayButton.dataset.dayScroll || 0) * timetableZoom;
+    const targetLeft = Number(dayButton.dataset.dayScroll || 0);
     if (scroller) {
       scroller.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" });
     }

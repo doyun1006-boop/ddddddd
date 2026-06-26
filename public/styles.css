@@ -3325,3 +3325,79 @@ button.danger {
     font-size: 8.5px;
   }
 }
+
+/* v19: 전체 주간 시간표를 한 화면에 넣는 자동 축소/확대 모드 */
+.schedule-fit-shell {
+  position: relative;
+  flex: 0 0 auto;
+  transform-origin: top left;
+}
+
+.duration-timetable {
+  transform-origin: top left !important;
+  will-change: transform;
+}
+
+.board-style-page .schedule-grid-scroller.fit-mode {
+  overflow-x: hidden !important;
+  overflow-y: hidden;
+}
+
+.board-style-page .schedule-grid-scroller.free-zoom-mode {
+  overflow-x: auto !important;
+  overflow-y: hidden;
+}
+
+.view-zoom-group small {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+/* 전체보기에서는 한 화면에 월~금이 들어오므로 불필요한 좌우 흔들림을 줄입니다. */
+.board-style-page .schedule-grid-scroller.fit-mode .schedule-fit-shell {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 수업 정보는 100% 기준에서 충분히 읽히도록 유지하고, 전체보기 버튼이 전체를 축소합니다. */
+.duration-timetable .day-track .timetable-lesson,
+.duration-timetable .day-track .timetable-lesson.is-overlap,
+.duration-timetable .day-track .timetable-lesson.is-compact,
+.duration-timetable .day-track .timetable-lesson.is-mini {
+  min-height: 90px;
+}
+
+@media (max-width: 760px) {
+  .view-zoom-group {
+    display: grid;
+    grid-template-columns: auto repeat(5, minmax(0, 1fr));
+    align-items: center;
+  }
+
+  .view-zoom-group small {
+    grid-column: 1 / -1;
+  }
+
+  .view-zoom-button {
+    padding: 8px 5px;
+    font-size: 10.5px;
+  }
+
+  .board-style-page .schedule-grid-scroller.fit-mode {
+    overflow-x: hidden !important;
+    padding-bottom: 2px;
+  }
+
+  .board-style-page .schedule-grid-scroller.free-zoom-mode {
+    overflow-x: auto !important;
+  }
+
+  .duration-timetable .day-track .timetable-lesson,
+  .duration-timetable .day-track .timetable-lesson.is-overlap,
+  .duration-timetable .day-track .timetable-lesson.is-compact,
+  .duration-timetable .day-track .timetable-lesson.is-mini {
+    min-height: 84px;
+  }
+}
