@@ -73,6 +73,28 @@ let activeCategory = getStorageItem("academyActiveCategory", "basketball");
 let latestData = null;
 let latestDataHash = "";
 
+const zoomOptions = [0.9, 1, 1.15, 1.3];
+let timetableZoom = normalizeZoom(getStorageItem("academyTimetableZoom", "1"));
+
+function normalizeZoom(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 1;
+  const nearest = zoomOptions.reduce((best, option) =>
+    Math.abs(option - numeric) < Math.abs(best - numeric) ? option : best
+  , 1);
+  return nearest;
+}
+
+function zoomLabel(value) {
+  return `${Math.round(Number(value || 1) * 100)}%`;
+}
+
+function setTimetableZoom(value) {
+  timetableZoom = normalizeZoom(value);
+  setStorageItem("academyTimetableZoom", String(timetableZoom));
+  if (latestData) render(latestData);
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -253,9 +275,9 @@ function lessonRange(lesson) {
 
 function getResponsiveSlotBaseHeight() {
   if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
-    return 104;
+    return 136;
   }
-  return 128;
+  return 156;
 }
 
 function getResponsiveHeaderHeight() {
@@ -274,16 +296,16 @@ function getResponsiveTimeColumnWidth() {
 
 function getResponsiveDayBaseWidth() {
   if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
-    return 150;
+    return 240;
   }
-  return 228;
+  return 280;
 }
 
 function getResponsiveLaneMinWidth() {
   if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
-    return 126;
+    return 218;
   }
-  return 172;
+  return 250;
 }
 
 function lessonOverlapsSlot(range, slot) {
@@ -303,11 +325,16 @@ function buildDurationGridLayout(days, sectionLessons, slots) {
   const dayWidths = days.map((day) => {
     const data = dayData.get(day);
     const maxLaneCount = Math.max(1, Number(data?.maxLaneCount || 1));
-    // v17: 겹치는 수업이 많으면 요일 칸 자체를 오른쪽으로 늘립니다.
-    // 카드 글씨를 작게 만들지 않고, 각 카드가 읽을 수 있는 최소 폭을 확보합니다.
-    return Math.max(dayBaseWidth, maxLaneCount * laneMinWidth + 16);
+    // v18: 겹치는 수업은 글씨를 줄이지 않고, 읽을 수 있는 폭이 확보될 때까지 요일 칸을 확장합니다.
+    return Math.max(dayBaseWidth, maxLaneCount * laneMinWidth + 28);
   });
   const timeColumnWidth = getResponsiveTimeColumnWidth();
+  const dayOffsets = [];
+  let runningLeft = timeColumnWidth;
+  dayWidths.forEach((width) => {
+    dayOffsets.push(runningLeft);
+    runningLeft += width;
+  });
   const totalWidth = timeColumnWidth + dayWidths.reduce((sum, width) => sum + width, 0);
 
   const baseHeight = getResponsiveSlotBaseHeight();
@@ -371,6 +398,7 @@ function buildDurationGridLayout(days, sectionLessons, slots) {
     dayData,
     rowHeights,
     dayWidths,
+    dayOffsets,
     timeColumnWidth,
     totalWidth,
     headerHeight: getResponsiveHeaderHeight(),
@@ -476,6 +504,24 @@ function renderTimetableSection(title, days, lessons) {
   heading.innerHTML = `<strong>🗓️ ${escapeHtml(title)}</strong><span>${escapeHtml(categoryInfo().label)} ${sectionLessons.length}개</span>`;
   section.append(heading);
 
+  const controls = document.createElement("div");
+  controls.className = "timetable-view-controls";
+  controls.innerHTML = `
+    <div class="view-zoom-group" aria-label="시간표 보기 크기">
+      <span>보기 크기</span>
+      ${zoomOptions.map((option) => `
+        <button type="button" class="view-zoom-button ${option === timetableZoom ? "active" : ""}" data-schedule-zoom="${option}">${zoomLabel(option)}</button>
+      `).join("")}
+    </div>
+    <div class="day-jump-group" aria-label="요일 빠른 이동">
+      <span>요일 이동</span>
+      ${days.map((day, index) => `
+        <button type="button" class="day-jump-button" data-day-scroll="${Math.max(0, (layout.dayOffsets[index] || 0) - layout.timeColumnWidth)}">${escapeHtml(day)}</button>
+      `).join("")}
+    </div>
+  `;
+  section.append(controls);
+
   const scroller = document.createElement("div");
   scroller.className = "timetable-scroller schedule-grid-scroller";
 
@@ -486,9 +532,12 @@ function renderTimetableSection(title, days, lessons) {
   grid.style.setProperty("--header-height", `${layout.headerHeight}px`);
   grid.style.setProperty("--time-col", `${layout.timeColumnWidth}px`);
   grid.style.setProperty("--grid-min-width", `${layout.totalWidth}px`);
-  grid.style.gridTemplateColumns = `${layout.timeColumnWidth}px ${layout.dayWidths.map((width) => `minmax(${width}px, ${width}fr)`).join(" ")}`;
+  grid.style.gridTemplateColumns = `${layout.timeColumnWidth}px ${layout.dayWidths.map((width) => `${width}px`).join(" ")}`;
   grid.style.gridTemplateRows = `${layout.headerHeight}px ${layout.rowHeights.map((height) => `${height}px`).join(" ")}`;
+  grid.style.width = `${layout.totalWidth}px`;
   grid.style.minWidth = `${layout.totalWidth}px`;
+  grid.style.zoom = String(timetableZoom);
+  grid.style.setProperty("--schedule-zoom", String(timetableZoom));
 
   const timeHead = document.createElement("div");
   timeHead.className = "grid-head time-head";
@@ -635,6 +684,24 @@ async function loadSchedule() {
     }
   }
 }
+
+board.addEventListener("click", (event) => {
+  const zoomButton = event.target.closest("button[data-schedule-zoom]");
+  if (zoomButton) {
+    setTimetableZoom(zoomButton.dataset.scheduleZoom);
+    return;
+  }
+
+  const dayButton = event.target.closest("button[data-day-scroll]");
+  if (dayButton) {
+    const section = dayButton.closest(".board-section");
+    const scroller = section?.querySelector(".schedule-grid-scroller");
+    const targetLeft = Number(dayButton.dataset.dayScroll || 0) * timetableZoom;
+    if (scroller) {
+      scroller.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" });
+    }
+  }
+});
 
 categoryTabs.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-category]");

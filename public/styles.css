@@ -3108,3 +3108,220 @@ button.danger {
     font-size: 8.5px;
   }
 }
+
+/* v18: 가독성 우선 - 요일 칸을 넓히고 전체 시간표 보기 크기 조절 */
+.timetable-view-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0 10px;
+  flex-wrap: wrap;
+}
+
+.view-zoom-group,
+.day-jump-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.view-zoom-button,
+.day-jump-button {
+  border: 1px solid #cbdcf5;
+  background: #ffffff;
+  color: #1e3a8a;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.06);
+}
+
+.view-zoom-button.active {
+  border-color: #f59e0b;
+  background: #facc15;
+  color: #111827;
+}
+
+.day-jump-button:hover,
+.view-zoom-button:hover {
+  transform: translateY(-1px);
+}
+
+.board-style-page .schedule-grid-scroller {
+  overflow: auto !important;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+  touch-action: auto;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  background: #ffffff;
+}
+
+.duration-timetable {
+  max-width: none !important;
+  table-layout: fixed;
+  overflow: visible !important;
+  transform-origin: top left;
+}
+
+.duration-timetable .grid-head,
+.duration-timetable .grid-time-cell,
+.duration-timetable .grid-slot,
+.duration-timetable .day-track {
+  overflow: visible !important;
+}
+
+.duration-timetable .day-track .timetable-lesson,
+.duration-timetable .day-track .timetable-lesson.is-overlap,
+.duration-timetable .day-track .timetable-lesson.is-compact,
+.duration-timetable .day-track .timetable-lesson.is-mini {
+  min-width: 0 !important;
+  min-height: 88px;
+  overflow: visible !important;
+  padding: 11px 10px;
+  gap: 5px;
+  justify-content: center;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.duration-timetable .lesson-time,
+.duration-timetable .timetable-lesson.is-compact .lesson-time,
+.duration-timetable .timetable-lesson.is-mini .lesson-time {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  min-height: 23px;
+  padding: 3px 9px;
+  font-size: 12px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.duration-timetable .timetable-lesson .lesson-name,
+.duration-timetable .timetable-lesson.is-compact .lesson-name,
+.duration-timetable .timetable-lesson.is-mini .lesson-name {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+}
+
+.duration-timetable .grade-chip,
+.duration-timetable .timetable-lesson.is-compact .grade-chip,
+.duration-timetable .timetable-lesson.is-mini .grade-chip,
+.duration-timetable .capacity-text,
+.duration-timetable .timetable-lesson.is-compact .capacity-text,
+.duration-timetable .place-text,
+.duration-timetable .timetable-lesson.is-compact .place-text,
+.duration-timetable .timetable-lesson.is-mini .place-text {
+  display: inline-flex !important;
+  max-width: 100%;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.duration-timetable .time-head,
+.duration-timetable .grid-time-cell {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+}
+
+.duration-timetable .time-head {
+  z-index: 36;
+}
+
+@media (max-width: 760px) {
+  .timetable-view-controls {
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .view-zoom-group,
+  .day-jump-group {
+    width: 100%;
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  .view-zoom-button,
+  .day-jump-button {
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+
+  .board-style-page .schedule-grid-scroller {
+    overflow: auto !important;
+    touch-action: auto;
+  }
+
+  .duration-timetable .day-track .timetable-lesson,
+  .duration-timetable .day-track .timetable-lesson.is-overlap,
+  .duration-timetable .day-track .timetable-lesson.is-compact,
+  .duration-timetable .day-track .timetable-lesson.is-mini {
+    min-height: 82px;
+    padding: 8px 8px;
+    gap: 4px;
+  }
+
+  .duration-timetable .lesson-time,
+  .duration-timetable .timetable-lesson.is-compact .lesson-time,
+  .duration-timetable .timetable-lesson.is-mini .lesson-time {
+    min-height: 20px;
+    padding: 3px 7px;
+    font-size: 10.5px;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+  }
+
+  .duration-timetable .timetable-lesson .lesson-name,
+  .duration-timetable .timetable-lesson.is-compact .lesson-name,
+  .duration-timetable .timetable-lesson.is-mini .lesson-name {
+    font-size: 12px;
+    line-height: 1.18;
+    letter-spacing: -0.03em;
+  }
+
+  .duration-timetable .grade-chip,
+  .duration-timetable .timetable-lesson.is-compact .grade-chip,
+  .duration-timetable .timetable-lesson.is-mini .grade-chip {
+    min-height: 16px;
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .duration-timetable .capacity-text,
+  .duration-timetable .timetable-lesson.is-compact .capacity-text {
+    font-size: 9.5px;
+  }
+
+  .duration-timetable .place-text,
+  .duration-timetable .timetable-lesson.is-compact .place-text,
+  .duration-timetable .timetable-lesson.is-mini .place-text {
+    font-size: 8.5px;
+  }
+}
