@@ -1731,3 +1731,307 @@ button.danger {
     display: none !important;
   }
 }
+
+/* v10: 밝은 학원 시간표 보드 + 정확한 수업시간 표시 */
+.board-style-page {
+  background: linear-gradient(180deg, #f6f9ff 0%, #eef4ff 55%, #ffffff 100%);
+  color: #0f172a;
+}
+
+.board-style-page .brand-watermark {
+  opacity: 0.035;
+  filter: invert(1);
+  background-position: right 24px bottom 24px;
+  background-size: 390px auto;
+}
+
+.schedule-header {
+  border: 1px solid #dbe6f5;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(30, 58, 138, 0.08);
+}
+
+.schedule-brand h1 {
+  color: #0f172a;
+}
+
+.schedule-brand h1::first-letter {
+  color: #f59e0b;
+}
+
+.schedule-brand p {
+  color: #52657d;
+}
+
+.compact-status {
+  border-color: #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.edit-link {
+  border-color: #c7d2fe;
+  background: #ffffff;
+  color: #1e3a8a;
+  box-shadow: 0 8px 18px rgba(30, 58, 138, 0.08);
+}
+
+.board-style-page .connection-warning {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.notice-bar {
+  border: 1px solid #fde68a;
+  background: #fff7d6;
+  box-shadow: 0 8px 18px rgba(245, 158, 11, 0.07);
+}
+
+.notice-bar strong,
+.notice-bar p {
+  color: #a16207;
+}
+
+.quick-link {
+  border: 1px solid #dbe6f5;
+  background: #ffffff;
+  color: #1e3a8a;
+  box-shadow: 0 8px 18px rgba(30, 58, 138, 0.06);
+}
+
+.quick-link.primary {
+  border-color: #2563eb;
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  color: #ffffff;
+}
+
+.schedule-main-title {
+  color: #0f172a;
+}
+
+.board-tabs {
+  gap: 10px;
+}
+
+.board-tabs .tab-button {
+  border: 1px solid #dbe6f5;
+  background: #ffffff;
+  color: #1e293b;
+  box-shadow: 0 8px 18px rgba(30, 58, 138, 0.06);
+}
+
+.board-tabs .tab-button.active {
+  border-color: #f59e0b;
+  background: #f8aa1c;
+  color: #1a1203;
+  box-shadow: 0 10px 22px rgba(245, 158, 11, 0.22);
+}
+
+.board-section-heading strong {
+  color: #0f172a;
+}
+
+.board-section-heading span {
+  color: #64748b;
+}
+
+.board-style-page .timetable-scroller {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.board-style-page .timetable th,
+.board-style-page .timetable td {
+  border: 1px solid #d8e1ee;
+}
+
+.board-style-page .timetable thead th {
+  background: #eef4ff;
+  color: #1e3a8a;
+}
+
+.board-style-page .time-cell {
+  background: #f8fbff;
+  color: #1e3a8a;
+}
+
+.board-style-page .time-cell strong {
+  color: #1e3a8a;
+  font-size: 14px;
+}
+
+.board-style-page .time-cell span {
+  display: block;
+  margin-top: 4px;
+  color: #7c8da6;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.board-style-page .timetable td,
+.board-style-page .timetable tbody tr:nth-child(even) td,
+.board-style-page .empty-cell {
+  background: #ffffff;
+}
+
+.board-style-page .timetable tbody tr:nth-child(even) .time-cell {
+  background: #f4f8ff;
+}
+
+.board-style-page .timetable-lesson {
+  min-height: 86px;
+  padding: 7px 6px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #0f172a;
+  box-shadow: 0 6px 14px rgba(30, 58, 138, 0.08);
+}
+
+.board-style-page .lesson-time {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px #bfdbfe;
+}
+
+.board-style-page .timetable-lesson .lesson-name {
+  color: #1d4ed8;
+}
+
+.board-style-page .grade-chip {
+  border-color: #93c5fd;
+  background: #ffffff;
+  color: #1e40af;
+}
+
+.board-style-page .capacity-text {
+  color: #0f172a;
+}
+
+.board-style-page .place-text {
+  color: #64748b;
+}
+
+.board-style-page .variant-basketball {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.board-style-page .variant-recruit,
+.board-style-page .variant-soccer {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+}
+
+.board-style-page .variant-recruit .lesson-name,
+.board-style-page .variant-soccer .lesson-name,
+.board-style-page .variant-recruit .lesson-time,
+.board-style-page .variant-soccer .lesson-time {
+  color: #047857;
+}
+
+.board-style-page .variant-recruit .lesson-time,
+.board-style-page .variant-soccer .lesson-time,
+.board-style-page .variant-recruit .grade-chip,
+.board-style-page .variant-soccer .grade-chip {
+  border-color: #86efac;
+  box-shadow: inset 0 0 0 1px #86efac;
+}
+
+.board-style-page .variant-recruit .grade-chip,
+.board-style-page .variant-soccer .grade-chip {
+  color: #047857;
+}
+
+.board-style-page .variant-kids,
+.board-style-page .variant-special {
+  border-color: #fbcfe8;
+  background: #fdf2f8;
+}
+
+.board-style-page .variant-kids .lesson-name,
+.board-style-page .variant-special .lesson-name,
+.board-style-page .variant-kids .lesson-time,
+.board-style-page .variant-special .lesson-time {
+  color: #be185d;
+}
+
+.board-style-page .variant-kids .lesson-time,
+.board-style-page .variant-special .lesson-time,
+.board-style-page .variant-kids .grade-chip,
+.board-style-page .variant-special .grade-chip {
+  border-color: #f9a8d4;
+  box-shadow: inset 0 0 0 1px #f9a8d4;
+}
+
+.board-style-page .variant-kids .grade-chip,
+.board-style-page .variant-special .grade-chip {
+  color: #be185d;
+}
+
+.board-style-page .empty {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #64748b;
+}
+
+@media (max-width: 760px) {
+  .board-style-page {
+    background: linear-gradient(180deg, #f6f9ff 0%, #eef4ff 60%, #ffffff 100%);
+  }
+
+  .board-tabs {
+    background: rgba(246, 249, 255, 0.94);
+  }
+
+  .schedule-header,
+  .notice-bar,
+  .quick-link,
+  .board-style-page .timetable-scroller {
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  }
+
+  .board-style-page .timetable {
+    min-width: 760px;
+  }
+
+  .board-style-page .time-head,
+  .board-style-page .time-cell {
+    width: 92px;
+  }
+
+  .board-style-page .time-cell strong {
+    font-size: 12px;
+  }
+
+  .board-style-page .time-cell span {
+    display: none;
+  }
+
+  .board-style-page .timetable td {
+    height: 92px;
+  }
+
+  .board-style-page .timetable-lesson {
+    min-height: 74px;
+    padding: 6px 4px;
+  }
+
+  .board-style-page .lesson-time {
+    min-height: 18px;
+    padding: 2px 5px;
+    font-size: 9px;
+  }
+}

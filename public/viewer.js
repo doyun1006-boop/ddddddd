@@ -177,7 +177,9 @@ function renderTabs(lessons) {
 function renderLessonCard(lesson) {
   const card = document.createElement("div");
   card.className = `timetable-lesson ${lessonVariant(lesson)}`;
+  const exactTime = `${lesson.startTime || "--:--"}~${lesson.endTime || "--:--"}`;
   card.innerHTML = `
+    <span class="lesson-time">${escapeHtml(exactTime)}</span>
     <p class="lesson-name">${escapeHtml(lesson.name || "수업명 미입력")}</p>
     <span class="grade-chip">${escapeHtml(lesson.grade || "학년 미정")}</span>
     <strong class="capacity-text">${escapeHtml(capacityText(lesson))}</strong>
@@ -223,7 +225,7 @@ function renderTimetableSection(title, days, lessons) {
     const timeCell = document.createElement("th");
     timeCell.scope = "row";
     timeCell.className = "time-cell";
-    timeCell.innerHTML = `<strong>${escapeHtml(slot.startTime)}~${escapeHtml(slot.endTime)}</strong>`;
+    timeCell.innerHTML = `<strong>${escapeHtml(slot.startTime.slice(0, 2))}:00대</strong><span>실제 시간은 카드 확인</span>`;
     row.append(timeCell);
 
     days.forEach((day) => {
