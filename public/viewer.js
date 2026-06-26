@@ -260,9 +260,30 @@ function getResponsiveSlotBaseHeight() {
 
 function getResponsiveHeaderHeight() {
   if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
-    return 34;
+    return 36;
   }
-  return 46;
+  return 48;
+}
+
+function getResponsiveTimeColumnWidth() {
+  if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
+    return 58;
+  }
+  return 96;
+}
+
+function getResponsiveDayBaseWidth() {
+  if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
+    return 150;
+  }
+  return 228;
+}
+
+function getResponsiveLaneMinWidth() {
+  if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
+    return 126;
+  }
+  return 172;
 }
 
 function lessonOverlapsSlot(range, slot) {
@@ -274,13 +295,26 @@ function buildDurationGridLayout(days, sectionLessons, slots) {
   days.forEach((day) => {
     const dayLessons = sectionLessons.filter((lesson) => lesson.day === day).sort(byTime);
     const laneResult = assignLessonLanes(dayLessons);
-    dayData.set(day, { dayLessons, assignments: laneResult.assignments });
+    dayData.set(day, { dayLessons, assignments: laneResult.assignments, maxLaneCount: laneResult.maxLaneCount });
   });
+
+  const dayBaseWidth = getResponsiveDayBaseWidth();
+  const laneMinWidth = getResponsiveLaneMinWidth();
+  const dayWidths = days.map((day) => {
+    const data = dayData.get(day);
+    const maxLaneCount = Math.max(1, Number(data?.maxLaneCount || 1));
+    // v17: 겹치는 수업이 많으면 요일 칸 자체를 오른쪽으로 늘립니다.
+    // 카드 글씨를 작게 만들지 않고, 각 카드가 읽을 수 있는 최소 폭을 확보합니다.
+    return Math.max(dayBaseWidth, maxLaneCount * laneMinWidth + 16);
+  });
+  const timeColumnWidth = getResponsiveTimeColumnWidth();
+  const totalWidth = timeColumnWidth + dayWidths.reduce((sum, width) => sum + width, 0);
 
   const baseHeight = getResponsiveSlotBaseHeight();
   const rowHeights = slots.map((slot) => {
     let maxOverlap = 1;
     let hasShortLesson = false;
+    let hasLongTitle = false;
 
     days.forEach((day) => {
       const data = dayData.get(day);
@@ -297,14 +331,16 @@ function buildDurationGridLayout(days, sectionLessons, slots) {
         const assignment = data.assignments.get(key);
         if (assignment) maxOverlap = Math.max(maxOverlap, assignment.laneCount || 1);
         if (range && range.end - range.start < 60) hasShortLesson = true;
+        if (String(lesson.name || "").length >= 8 || String(lesson.grade || "").length >= 8) hasLongTitle = true;
       });
     });
 
-    let multiplier = 1;
-    if (maxOverlap === 2) multiplier = 1.45;
-    if (maxOverlap === 3) multiplier = 1.85;
-    if (maxOverlap >= 4) multiplier = 2.2;
-    if (hasShortLesson) multiplier += 0.12;
+    let multiplier = 1.1;
+    // v17에서는 폭을 키우므로 겹침만으로 세로를 과하게 키우지 않습니다.
+    // 대신 긴 제목/짧은 수업은 약간 더 높여서 모든 텍스트가 보이게 합니다.
+    if (hasLongTitle) multiplier += 0.12;
+    if (hasShortLesson) multiplier += 0.15;
+    if (maxOverlap >= 3) multiplier += 0.08;
     return Math.round(baseHeight * multiplier);
   });
 
@@ -334,6 +370,9 @@ function buildDurationGridLayout(days, sectionLessons, slots) {
   return {
     dayData,
     rowHeights,
+    dayWidths,
+    timeColumnWidth,
+    totalWidth,
     headerHeight: getResponsiveHeaderHeight(),
     totalHeight: runningOffset,
     positionFromMinutes
@@ -373,7 +412,9 @@ function assignLessonLanes(dayLessons) {
     assignments.set(item.lesson.id || `${item.lesson.day}-${item.lesson.startTime}-${item.lesson.name}`, item);
   });
 
-  return { assignments };
+  const maxLaneCount = positionedItems.reduce((max, item) => Math.max(max, item.laneCount || 1), 1);
+
+  return { assignments, maxLaneCount };
 }
 
 function renderTabs(lessons) {
@@ -393,13 +434,9 @@ function renderTabs(lessons) {
 
 function renderLessonCard(lesson, options = {}) {
   const card = document.createElement("div");
-  const duration = Number(options.durationMinutes || 60);
   const laneCount = Number(options.laneCount || 1);
-  // v16: 같은 시간대 수업은 칸 높이를 키워 가독성을 확보합니다.
-  // 그래서 2개 겹침까지는 작은 글씨 카드로 강제 축소하지 않습니다.
-  const compact = Boolean(options.compact || laneCount >= 3 || duration <= 40);
-  const mini = Boolean(options.mini || laneCount >= 4 || duration <= 30);
-  card.className = `timetable-lesson ${lessonVariant(lesson)}${compact ? " is-compact" : ""}${mini ? " is-mini" : ""}${laneCount > 1 ? " is-overlap" : ""}`;
+  // v17: 글씨 축소/말줄임 대신 요일 칸을 오른쪽으로 넓혀 가독성을 확보합니다.
+  card.className = `timetable-lesson ${lessonVariant(lesson)}${laneCount > 1 ? " is-overlap" : ""}`;
   const exactTime = `${lesson.startTime || "--:--"}~${lesson.endTime || "--:--"}`;
   const detailText = [
     exactTime,
@@ -447,7 +484,11 @@ function renderTimetableSection(title, days, lessons) {
   grid.style.setProperty("--days-count", days.length);
   grid.style.setProperty("--slot-count", slots.length);
   grid.style.setProperty("--header-height", `${layout.headerHeight}px`);
+  grid.style.setProperty("--time-col", `${layout.timeColumnWidth}px`);
+  grid.style.setProperty("--grid-min-width", `${layout.totalWidth}px`);
+  grid.style.gridTemplateColumns = `${layout.timeColumnWidth}px ${layout.dayWidths.map((width) => `minmax(${width}px, ${width}fr)`).join(" ")}`;
   grid.style.gridTemplateRows = `${layout.headerHeight}px ${layout.rowHeights.map((height) => `${height}px`).join(" ")}`;
+  grid.style.minWidth = `${layout.totalWidth}px`;
 
   const timeHead = document.createElement("div");
   timeHead.className = "grid-head time-head";
@@ -506,9 +547,7 @@ function renderTimetableSection(title, days, lessons) {
       const laneWidth = 100 / lessonLaneCount;
       const card = renderLessonCard(lesson, {
         durationMinutes,
-        laneCount: lessonLaneCount,
-        compact: lessonLaneCount >= 3 || durationMinutes <= 40,
-        mini: lessonLaneCount >= 4 || durationMinutes <= 30
+        laneCount: lessonLaneCount
       });
       card.style.setProperty("--lesson-top", `${Math.max(0, topPixels)}px`);
       card.style.setProperty("--lesson-height", `${heightPixels}px`);
