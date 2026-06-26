@@ -251,6 +251,95 @@ function lessonRange(lesson) {
   return { start, end };
 }
 
+function getResponsiveSlotBaseHeight() {
+  if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
+    return 104;
+  }
+  return 128;
+}
+
+function getResponsiveHeaderHeight() {
+  if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches) {
+    return 34;
+  }
+  return 46;
+}
+
+function lessonOverlapsSlot(range, slot) {
+  return range.start < slot.endMinutes && range.end > slot.startMinutes;
+}
+
+function buildDurationGridLayout(days, sectionLessons, slots) {
+  const dayData = new Map();
+  days.forEach((day) => {
+    const dayLessons = sectionLessons.filter((lesson) => lesson.day === day).sort(byTime);
+    const laneResult = assignLessonLanes(dayLessons);
+    dayData.set(day, { dayLessons, assignments: laneResult.assignments });
+  });
+
+  const baseHeight = getResponsiveSlotBaseHeight();
+  const rowHeights = slots.map((slot) => {
+    let maxOverlap = 1;
+    let hasShortLesson = false;
+
+    days.forEach((day) => {
+      const data = dayData.get(day);
+      if (!data) return;
+      const activeLessons = data.dayLessons.filter((lesson) => {
+        const range = lessonRange(lesson);
+        return range && lessonOverlapsSlot(range, slot);
+      });
+      if (!activeLessons.length) return;
+      maxOverlap = Math.max(maxOverlap, activeLessons.length);
+      activeLessons.forEach((lesson) => {
+        const range = lessonRange(lesson);
+        const key = lesson.id || `${lesson.day}-${lesson.startTime}-${lesson.name}`;
+        const assignment = data.assignments.get(key);
+        if (assignment) maxOverlap = Math.max(maxOverlap, assignment.laneCount || 1);
+        if (range && range.end - range.start < 60) hasShortLesson = true;
+      });
+    });
+
+    let multiplier = 1;
+    if (maxOverlap === 2) multiplier = 1.45;
+    if (maxOverlap === 3) multiplier = 1.85;
+    if (maxOverlap >= 4) multiplier = 2.2;
+    if (hasShortLesson) multiplier += 0.12;
+    return Math.round(baseHeight * multiplier);
+  });
+
+  const rowOffsets = [];
+  let runningOffset = 0;
+  rowHeights.forEach((height) => {
+    rowOffsets.push(runningOffset);
+    runningOffset += height;
+  });
+
+  function positionFromMinutes(minutes) {
+    if (!slots.length) return 0;
+    if (minutes <= slots[0].startMinutes) return 0;
+    const lastSlot = slots[slots.length - 1];
+    if (minutes >= lastSlot.endMinutes) return runningOffset;
+
+    for (let index = 0; index < slots.length; index += 1) {
+      const slot = slots[index];
+      if (minutes >= slot.startMinutes && minutes <= slot.endMinutes) {
+        const ratio = Math.min(1, Math.max(0, (minutes - slot.startMinutes) / 60));
+        return rowOffsets[index] + rowHeights[index] * ratio;
+      }
+    }
+    return runningOffset;
+  }
+
+  return {
+    dayData,
+    rowHeights,
+    headerHeight: getResponsiveHeaderHeight(),
+    totalHeight: runningOffset,
+    positionFromMinutes
+  };
+}
+
 function assignLessonLanes(dayLessons) {
   const sorted = [...dayLessons]
     .map((lesson) => ({ lesson, range: lessonRange(lesson) }))
@@ -306,8 +395,10 @@ function renderLessonCard(lesson, options = {}) {
   const card = document.createElement("div");
   const duration = Number(options.durationMinutes || 60);
   const laneCount = Number(options.laneCount || 1);
-  const compact = Boolean(options.compact || laneCount > 1 || duration < 60);
-  const mini = Boolean(options.mini || laneCount >= 3 || duration <= 45);
+  // v16: 같은 시간대 수업은 칸 높이를 키워 가독성을 확보합니다.
+  // 그래서 2개 겹침까지는 작은 글씨 카드로 강제 축소하지 않습니다.
+  const compact = Boolean(options.compact || laneCount >= 3 || duration <= 40);
+  const mini = Boolean(options.mini || laneCount >= 4 || duration <= 30);
   card.className = `timetable-lesson ${lessonVariant(lesson)}${compact ? " is-compact" : ""}${mini ? " is-mini" : ""}${laneCount > 1 ? " is-overlap" : ""}`;
   const exactTime = `${lesson.startTime || "--:--"}~${lesson.endTime || "--:--"}`;
   const detailText = [
@@ -318,9 +409,7 @@ function renderLessonCard(lesson, options = {}) {
     lesson.place || ""
   ].filter(Boolean).join(" · ");
   card.title = detailText;
-  card.tabIndex = 0;
-  card.setAttribute("role", "button");
-  card.setAttribute("aria-label", `${detailText} 자세히 보기`);
+  card.setAttribute("aria-label", detailText);
   card.innerHTML = `
     <span class="lesson-time">${escapeHtml(exactTime)}</span>
     <p class="lesson-name">${escapeHtml(lesson.name || "수업명 미입력")}</p>
@@ -340,9 +429,7 @@ function renderTimetableSection(title, days, lessons) {
   const slots = makeTimeSlots(sectionLessons);
   if (!slots.length) return null;
 
-  const minMinutes = slots[0].startMinutes;
-  const maxMinutes = slots[slots.length - 1].endMinutes;
-  const totalMinutes = Math.max(60, maxMinutes - minMinutes);
+  const layout = buildDurationGridLayout(days, sectionLessons, slots);
 
   const section = document.createElement("section");
   section.className = "board-section";
@@ -359,6 +446,8 @@ function renderTimetableSection(title, days, lessons) {
   grid.className = "schedule-grid duration-timetable";
   grid.style.setProperty("--days-count", days.length);
   grid.style.setProperty("--slot-count", slots.length);
+  grid.style.setProperty("--header-height", `${layout.headerHeight}px`);
+  grid.style.gridTemplateRows = `${layout.headerHeight}px ${layout.rowHeights.map((height) => `${height}px`).join(" ")}`;
 
   const timeHead = document.createElement("div");
   timeHead.className = "grid-head time-head";
@@ -400,8 +489,9 @@ function renderTimetableSection(title, days, lessons) {
     track.style.gridColumn = String(dayIndex + 2);
     track.style.gridRow = `2 / span ${slots.length}`;
 
-    const dayLessons = sectionLessons.filter((lesson) => lesson.day === day).sort(byTime);
-    const { assignments } = assignLessonLanes(dayLessons);
+    const data = layout.dayData.get(day) || { dayLessons: [], assignments: new Map() };
+    const dayLessons = data.dayLessons;
+    const assignments = data.assignments;
 
     dayLessons.forEach((lesson) => {
       const range = lessonRange(lesson);
@@ -409,18 +499,19 @@ function renderTimetableSection(title, days, lessons) {
       const assignmentKey = lesson.id || `${lesson.day}-${lesson.startTime}-${lesson.name}`;
       const assignment = assignments.get(assignmentKey) || { lane: 0, laneCount: 1 };
       const durationMinutes = Math.max(1, range.end - range.start);
-      const topPercent = ((range.start - minMinutes) / totalMinutes) * 100;
-      const heightPercent = (durationMinutes / totalMinutes) * 100;
+      const topPixels = layout.positionFromMinutes(range.start);
+      const bottomPixels = layout.positionFromMinutes(range.end);
+      const heightPixels = Math.max(54, bottomPixels - topPixels);
       const lessonLaneCount = Math.max(1, assignment.laneCount || 1);
       const laneWidth = 100 / lessonLaneCount;
       const card = renderLessonCard(lesson, {
         durationMinutes,
         laneCount: lessonLaneCount,
-        compact: lessonLaneCount > 1 || durationMinutes < 60,
-        mini: lessonLaneCount >= 3 || durationMinutes <= 45
+        compact: lessonLaneCount >= 3 || durationMinutes <= 40,
+        mini: lessonLaneCount >= 4 || durationMinutes <= 30
       });
-      card.style.setProperty("--lesson-top", `${Math.max(0, topPercent)}%`);
-      card.style.setProperty("--lesson-height", `${Math.max(6, heightPercent)}%`);
+      card.style.setProperty("--lesson-top", `${Math.max(0, topPixels)}px`);
+      card.style.setProperty("--lesson-height", `${heightPixels}px`);
       card.style.setProperty("--lesson-left", `${assignment.lane * laneWidth}%`);
       card.style.setProperty("--lesson-width", `${laneWidth}%`);
       track.append(card);
@@ -514,21 +605,12 @@ categoryTabs.addEventListener("click", (event) => {
   if (latestData) render(latestData);
 });
 
-board.addEventListener("click", (event) => {
-  const card = event.target.closest(".timetable-lesson");
-  if (!card) return;
-  board.querySelectorAll(".timetable-lesson.expanded").forEach((openCard) => {
-    if (openCard !== card) openCard.classList.remove("expanded");
-  });
-  card.classList.toggle("expanded");
-});
-
-board.addEventListener("keydown", (event) => {
-  if (event.key !== "Enter" && event.key !== " ") return;
-  const card = event.target.closest(".timetable-lesson");
-  if (!card) return;
-  event.preventDefault();
-  card.click();
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (latestData) render(latestData);
+  }, 180);
 });
 
 loadSchedule();
