@@ -258,7 +258,7 @@ function assignLessonLanes(dayLessons) {
     .sort((a, b) => a.range.start - b.range.start || a.range.end - b.range.end);
 
   const active = [];
-  let maxLaneCount = 1;
+  const positionedItems = [];
   const assignments = new Map();
 
   sorted.forEach((item) => {
@@ -270,13 +270,21 @@ function assignLessonLanes(dayLessons) {
     const usedLanes = new Set(active.map((activeItem) => activeItem.lane));
     while (usedLanes.has(lane)) lane += 1;
 
-    const positioned = { ...item, lane };
+    const positioned = { ...item, lane, laneCount: 1 };
     active.push(positioned);
-    maxLaneCount = Math.max(maxLaneCount, lane + 1, active.length);
-    assignments.set(item.lesson.id || `${item.lesson.day}-${item.lesson.startTime}-${item.lesson.name}`, positioned);
+    positionedItems.push(positioned);
   });
 
-  return { assignments, laneCount: maxLaneCount };
+  // 전체 요일을 무조건 반으로 나누지 않고, 실제로 겹치는 수업끼리만 폭을 나눕니다.
+  positionedItems.forEach((item) => {
+    const overlaps = positionedItems.filter((other) =>
+      other.range.start < item.range.end && other.range.end > item.range.start
+    );
+    item.laneCount = Math.max(1, ...overlaps.map((other) => other.lane + 1));
+    assignments.set(item.lesson.id || `${item.lesson.day}-${item.lesson.startTime}-${item.lesson.name}`, item);
+  });
+
+  return { assignments };
 }
 
 function renderTabs(lessons) {
@@ -294,15 +302,32 @@ function renderTabs(lessons) {
   });
 }
 
-function renderLessonCard(lesson) {
+function renderLessonCard(lesson, options = {}) {
   const card = document.createElement("div");
-  card.className = `timetable-lesson ${lessonVariant(lesson)}`;
+  const duration = Number(options.durationMinutes || 60);
+  const laneCount = Number(options.laneCount || 1);
+  const compact = Boolean(options.compact || laneCount > 1 || duration < 60);
+  const mini = Boolean(options.mini || laneCount >= 3 || duration <= 45);
+  card.className = `timetable-lesson ${lessonVariant(lesson)}${compact ? " is-compact" : ""}${mini ? " is-mini" : ""}${laneCount > 1 ? " is-overlap" : ""}`;
   const exactTime = `${lesson.startTime || "--:--"}~${lesson.endTime || "--:--"}`;
+  const detailText = [
+    exactTime,
+    lesson.name || "수업명 미입력",
+    lesson.grade || "학년 미정",
+    capacityText(lesson),
+    lesson.place || ""
+  ].filter(Boolean).join(" · ");
+  card.title = detailText;
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", `${detailText} 자세히 보기`);
   card.innerHTML = `
     <span class="lesson-time">${escapeHtml(exactTime)}</span>
     <p class="lesson-name">${escapeHtml(lesson.name || "수업명 미입력")}</p>
-    <span class="grade-chip">${escapeHtml(lesson.grade || "학년 미정")}</span>
-    <strong class="capacity-text">${escapeHtml(capacityText(lesson))}</strong>
+    <span class="lesson-subline">
+      <span class="grade-chip">${escapeHtml(lesson.grade || "학년 미정")}</span>
+      <strong class="capacity-text">${escapeHtml(capacityText(lesson))}</strong>
+    </span>
     ${lesson.place ? `<small class="place-text">${escapeHtml(lesson.place)}</small>` : ""}
   `;
   return card;
@@ -376,17 +401,24 @@ function renderTimetableSection(title, days, lessons) {
     track.style.gridRow = `2 / span ${slots.length}`;
 
     const dayLessons = sectionLessons.filter((lesson) => lesson.day === day).sort(byTime);
-    const { assignments, laneCount } = assignLessonLanes(dayLessons);
+    const { assignments } = assignLessonLanes(dayLessons);
 
     dayLessons.forEach((lesson) => {
       const range = lessonRange(lesson);
       if (!range) return;
       const assignmentKey = lesson.id || `${lesson.day}-${lesson.startTime}-${lesson.name}`;
-      const assignment = assignments.get(assignmentKey) || { lane: 0 };
+      const assignment = assignments.get(assignmentKey) || { lane: 0, laneCount: 1 };
+      const durationMinutes = Math.max(1, range.end - range.start);
       const topPercent = ((range.start - minMinutes) / totalMinutes) * 100;
-      const heightPercent = ((range.end - range.start) / totalMinutes) * 100;
-      const laneWidth = 100 / Math.max(1, laneCount);
-      const card = renderLessonCard(lesson);
+      const heightPercent = (durationMinutes / totalMinutes) * 100;
+      const lessonLaneCount = Math.max(1, assignment.laneCount || 1);
+      const laneWidth = 100 / lessonLaneCount;
+      const card = renderLessonCard(lesson, {
+        durationMinutes,
+        laneCount: lessonLaneCount,
+        compact: lessonLaneCount > 1 || durationMinutes < 60,
+        mini: lessonLaneCount >= 3 || durationMinutes <= 45
+      });
       card.style.setProperty("--lesson-top", `${Math.max(0, topPercent)}%`);
       card.style.setProperty("--lesson-height", `${Math.max(6, heightPercent)}%`);
       card.style.setProperty("--lesson-left", `${assignment.lane * laneWidth}%`);
@@ -480,6 +512,23 @@ categoryTabs.addEventListener("click", (event) => {
   activeCategory = button.dataset.category;
   setStorageItem("academyActiveCategory", activeCategory);
   if (latestData) render(latestData);
+});
+
+board.addEventListener("click", (event) => {
+  const card = event.target.closest(".timetable-lesson");
+  if (!card) return;
+  board.querySelectorAll(".timetable-lesson.expanded").forEach((openCard) => {
+    if (openCard !== card) openCard.classList.remove("expanded");
+  });
+  card.classList.toggle("expanded");
+});
+
+board.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const card = event.target.closest(".timetable-lesson");
+  if (!card) return;
+  event.preventDefault();
+  card.click();
 });
 
 loadSchedule();
