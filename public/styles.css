@@ -828,3 +828,398 @@ button.danger {
     padding: 10px 8px;
   }
 }
+
+/* v8: mobile-first schedule optimization */
+.mobile-schedule-list {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  html {
+    background: linear-gradient(180deg, #071225 0%, #0b1f49 55%, #111827 100%);
+  }
+
+  .brand-watermark {
+    opacity: 0.04;
+    background-position: right -140px top 40px;
+    background-size: 360px auto;
+  }
+
+  .topbar {
+    gap: 12px;
+    padding: 14px 14px 12px;
+  }
+
+  .topbar.brand-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .brand-block {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .brand-badge,
+  .admin-badge {
+    flex: 0 0 52px;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+  }
+
+  .brand-badge img,
+  .admin-badge img {
+    width: 40px;
+  }
+
+  .eyebrow {
+    margin-bottom: 4px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  h1 {
+    font-size: 22px;
+    line-height: 1.08;
+  }
+
+  .brand-caption {
+    margin-top: 5px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .status-card {
+    align-self: flex-start;
+    padding: 8px 11px;
+    font-size: 12px;
+  }
+
+  .shell,
+  .admin-layout {
+    width: min(100%, calc(100% - 18px));
+    margin-top: 10px;
+    margin-bottom: 28px;
+  }
+
+  .viewer-shell {
+    gap: 10px;
+  }
+
+  .hero-panel {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .hero-panel::after {
+    width: 180px;
+    height: 180px;
+    right: -60px;
+    bottom: -60px;
+  }
+
+  .hero-kicker {
+    font-size: 11px;
+    margin-bottom: 7px;
+  }
+
+  .hero-copy h2 {
+    font-size: 22px;
+    line-height: 1.18;
+    margin-bottom: 8px;
+  }
+
+  .hero-copy p:last-child {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .hero-actions {
+    min-width: 0;
+    width: 100%;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .cta-button,
+  button,
+  .ghost-link {
+    min-height: 44px;
+    padding: 10px 11px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+
+  .wide-link {
+    grid-column: 1 / -1;
+  }
+
+  .notice,
+  .connection-warning {
+    padding: 12px 13px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .category-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    padding: 6px 0;
+    background: rgba(7, 18, 37, 0.88);
+    backdrop-filter: blur(10px);
+  }
+
+  .tab-button {
+    min-height: 46px;
+    border-radius: 13px;
+    gap: 6px;
+  }
+
+  .tab-button span {
+    font-size: 15px;
+  }
+
+  .tab-button strong {
+    min-width: 24px;
+    padding: 2px 7px;
+    font-size: 11px;
+  }
+
+  .schedule-board {
+    min-height: 0;
+  }
+
+  .timetable-scroller {
+    display: none;
+  }
+
+  .mobile-schedule-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .mobile-schedule-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.08);
+    color: #eff6ff;
+  }
+
+  .mobile-schedule-heading strong {
+    font-size: 16px;
+  }
+
+  .mobile-schedule-heading span {
+    color: #bfdbfe;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .mobile-day-section {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .mobile-day-section h3 {
+    margin: 0 0 2px;
+    color: #bfdbfe;
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .mobile-lesson-card {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    align-items: stretch;
+    padding: 11px;
+    border-radius: 16px;
+    background: #ffffff;
+    color: var(--ink-dark);
+    box-shadow: 0 10px 22px rgba(0,0,0,0.16);
+  }
+
+  .mobile-time {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 3px;
+    border-radius: 13px;
+    background: linear-gradient(180deg, #1d4ed8, #172554);
+    color: #ffffff;
+    text-align: center;
+  }
+
+  .mobile-time strong {
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  .mobile-time span {
+    color: #bfdbfe;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .mobile-lesson-body {
+    min-width: 0;
+  }
+
+  .mobile-lesson-card .lesson-name {
+    margin-bottom: 8px;
+    font-size: 16px;
+  }
+
+  .pill {
+    min-height: 24px;
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+
+  .empty {
+    padding: 24px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+  }
+
+  .admin-page .topbar-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .admin-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .editor-panel,
+  .classes-panel {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .settings-group {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  label {
+    gap: 6px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 42px;
+    padding: 10px 11px;
+    border-radius: 11px;
+    font-size: 14px;
+  }
+
+  .toolbar {
+    position: sticky;
+    bottom: 8px;
+    z-index: 8;
+    padding: 8px;
+    margin: 0 -4px;
+    border: 1px solid #d8e2f0;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.94);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+  }
+
+  .toolbar button {
+    flex: 1;
+    color: var(--ink-dark);
+    background: #ffffff;
+  }
+
+  .toolbar button.primary {
+    color: #ffffff;
+  }
+
+  .helper,
+  .admin-message,
+  .panel-subtitle {
+    font-size: 12px;
+  }
+
+  .panel-heading {
+    gap: 8px;
+  }
+
+  .panel-heading h2 {
+    font-size: 23px;
+  }
+
+  .admin-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    background: rgba(255,255,255,0.92);
+  }
+
+  .class-editor-list {
+    gap: 10px;
+  }
+
+  .class-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    padding: 11px;
+    border-radius: 16px;
+  }
+
+  .class-row label:nth-child(5),
+  .class-row label:nth-child(9),
+  .class-row .row-actions {
+    grid-column: 1 / -1;
+  }
+
+  .class-row .danger {
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .hero-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-lesson-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .mobile-time strong {
+    font-size: 15px;
+  }
+
+  .mobile-lesson-card .lesson-name {
+    font-size: 15px;
+  }
+}

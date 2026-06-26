@@ -155,6 +155,48 @@ function renderLessonCard(lesson) {
   return card;
 }
 
+
+function renderMobileSchedule(lessons) {
+  const list = document.createElement("div");
+  list.className = "mobile-schedule-list";
+
+  const activeLabel = categories.find((category) => category.id === activeCategory)?.label || "선택 탭";
+  const heading = document.createElement("div");
+  heading.className = "mobile-schedule-heading";
+  heading.innerHTML = `<strong>${escapeHtml(activeLabel)} 시간표</strong><span>${lessons.length}개 수업</span>`;
+  list.append(heading);
+
+  dayOrder.forEach((day) => {
+    const dayLessons = lessons.filter((lesson) => lesson.day === day).sort(byTime);
+    if (!dayLessons.length) return;
+
+    const section = document.createElement("section");
+    section.className = "mobile-day-section";
+    section.innerHTML = `<h3>${escapeHtml(day)}요일</h3>`;
+
+    dayLessons.forEach((lesson) => {
+      const card = document.createElement("article");
+      card.className = "mobile-lesson-card";
+      card.innerHTML = `
+        <div class="mobile-time"><strong>${escapeHtml(lesson.startTime || "--:--")}</strong><span>${escapeHtml(lesson.endTime || "--:--")}</span></div>
+        <div class="mobile-lesson-body">
+          <p class="lesson-name">${escapeHtml(lesson.name || "수업명 미입력")}</p>
+          <div class="lesson-meta compact">
+            <span class="pill">${escapeHtml(lesson.grade || "학년 미정")}</span>
+            <span class="pill capacity ${capacityClass(lesson)}">${escapeHtml(capacityText(lesson))}</span>
+            ${lesson.place ? `<span class="pill place">📍 ${escapeHtml(lesson.place)}</span>` : ""}
+          </div>
+        </div>
+      `;
+      section.append(card);
+    });
+
+    list.append(section);
+  });
+
+  return list;
+}
+
 function renderTimetable(lessons) {
   const filteredLessons = lessons.filter((lesson) => lesson.category === activeCategory).sort(byDayAndTime);
   const slots = makeTimeSlots(filteredLessons);
@@ -217,6 +259,7 @@ function renderTimetable(lessons) {
 
   scroller.append(table);
   board.append(scroller);
+  board.append(renderMobileSchedule(filteredLessons));
 }
 
 function render(data) {
