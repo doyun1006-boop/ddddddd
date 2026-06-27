@@ -512,8 +512,6 @@ function renderTimetableSection(title, days, lessons) {
   const slots = makeTimeSlots(sectionLessons);
   if (!slots.length) return null;
 
-  const layout = buildDurationGridLayout(days, sectionLessons, slots);
-
   const section = document.createElement("section");
   section.className = "board-section";
 
@@ -522,56 +520,26 @@ function renderTimetableSection(title, days, lessons) {
   heading.innerHTML = `<strong>🗓️ ${escapeHtml(title)}</strong><span>${escapeHtml(categoryInfo().label)} ${sectionLessons.length}개</span>`;
   section.append(heading);
 
-  const effectiveZoom = resolveTimetableZoom(layout.totalWidth);
-  const contentHeight = layout.headerHeight + layout.totalHeight;
-  const scaled = (value) => Math.max(1, Math.round(value * effectiveZoom));
-  const scaledFloat = (value) => Math.max(0, value * effectiveZoom);
-  const scaledTotalWidth = scaled(layout.totalWidth);
-  const scaledContentHeight = scaled(contentHeight);
-
-  const controls = document.createElement("div");
-  controls.className = "timetable-view-controls";
-  controls.innerHTML = `
-    <div class="view-zoom-group" aria-label="시간표 보기 크기">
-      <span>보기</span>
-      ${zoomOptions.map((option) => `
-        <button type="button" class="view-zoom-button ${option.value === timetableZoomMode ? "active" : ""}" data-schedule-zoom="${option.value}">${escapeHtml(option.label)}</button>
-      `).join("")}
-      <small>${timetableZoomMode === "fit" ? `현재 ${Math.round(effectiveZoom * 100)}%` : ""}</small>
-    </div>
-    <div class="day-jump-group" aria-label="요일 빠른 이동">
-      <span>요일 이동</span>
-      ${days.map((day, index) => `
-        <button type="button" class="day-jump-button" data-day-scroll="${Math.max(0, ((layout.dayOffsets[index] || 0) - layout.timeColumnWidth) * effectiveZoom)}">${escapeHtml(day)}</button>
-      `).join("")}
-    </div>
-  `;
-  section.append(controls);
+  const lessonsByStartHour = new Map();
+  sectionLessons.sort(byDayAndTime).forEach((lesson) => {
+    const range = lessonRange(lesson);
+    if (!range) return;
+    const hour = Math.floor(range.start / 60);
+    const key = `${lesson.day}-${hour}`;
+    if (!lessonsByStartHour.has(key)) lessonsByStartHour.set(key, []);
+    lessonsByStartHour.get(key).push(lesson);
+  });
 
   const scroller = document.createElement("div");
-  scroller.className = `timetable-scroller schedule-grid-scroller ${timetableZoomMode === "fit" ? "fit-mode" : "free-zoom-mode"}`;
-
-  const fitShell = document.createElement("div");
-  fitShell.className = "schedule-fit-shell";
-  fitShell.style.width = `${scaledTotalWidth}px`;
-  fitShell.style.minWidth = `${scaledTotalWidth}px`;
-  fitShell.style.height = `${scaledContentHeight}px`;
+  scroller.className = "timetable-scroller schedule-grid-scroller no-x-scroll-mode";
 
   const grid = document.createElement("div");
-  grid.className = "schedule-grid duration-timetable";
+  grid.className = "schedule-grid duration-timetable stack-timetable";
   grid.style.setProperty("--days-count", days.length);
   grid.style.setProperty("--slot-count", slots.length);
-  grid.style.setProperty("--header-height", `${scaled(layout.headerHeight)}px`);
-  grid.style.setProperty("--time-col", `${scaled(layout.timeColumnWidth)}px`);
-  grid.style.setProperty("--grid-min-width", `${scaledTotalWidth}px`);
-  grid.style.gridTemplateColumns = `${scaled(layout.timeColumnWidth)}px ${layout.dayWidths.map((width) => `${scaled(width)}px`).join(" ")}`;
-  grid.style.gridTemplateRows = `${scaled(layout.headerHeight)}px ${layout.rowHeights.map((height) => `${scaled(height)}px`).join(" ")}`;
-  grid.style.width = `${scaledTotalWidth}px`;
-  grid.style.minWidth = `${scaledTotalWidth}px`;
-  grid.style.height = `${scaledContentHeight}px`;
-  grid.style.transform = "none";
-  grid.style.transformOrigin = "top left";
-  grid.style.setProperty("--schedule-zoom", String(effectiveZoom));
+  grid.style.gridTemplateColumns = `var(--time-col-stack) repeat(${days.length}, minmax(0, 1fr))`;
+  grid.style.width = "100%";
+  grid.style.minWidth = "0";
 
   const timeHead = document.createElement("div");
   timeHead.className = "grid-head time-head";
@@ -600,54 +568,26 @@ function renderTimetableSection(title, days, lessons) {
 
     days.forEach((day, dayIndex) => {
       const gridSlot = document.createElement("div");
-      gridSlot.className = "grid-slot";
+      gridSlot.className = "grid-slot stack-slot";
       gridSlot.style.gridColumn = String(dayIndex + 2);
       gridSlot.style.gridRow = String(rowNumber);
+
+      const stack = document.createElement("div");
+      stack.className = "lesson-stack";
+      const lessonsForCell = (lessonsByStartHour.get(`${day}-${slot.startHour}`) || []).sort(byTime);
+      lessonsForCell.forEach((lesson) => {
+        const card = renderLessonCard(lesson, { laneCount: 1 });
+        stack.append(card);
+      });
+      gridSlot.append(stack);
       grid.append(gridSlot);
     });
   });
 
-  days.forEach((day, dayIndex) => {
-    const track = document.createElement("div");
-    track.className = "day-track";
-    track.style.gridColumn = String(dayIndex + 2);
-    track.style.gridRow = `2 / span ${slots.length}`;
-
-    const data = layout.dayData.get(day) || { dayLessons: [], assignments: new Map() };
-    const dayLessons = data.dayLessons;
-    const assignments = data.assignments;
-
-    dayLessons.forEach((lesson) => {
-      const range = lessonRange(lesson);
-      if (!range) return;
-      const assignmentKey = lesson.id || `${lesson.day}-${lesson.startTime}-${lesson.name}`;
-      const assignment = assignments.get(assignmentKey) || { lane: 0, laneCount: 1 };
-      const durationMinutes = Math.max(1, range.end - range.start);
-      const topPixels = layout.positionFromMinutes(range.start);
-      const bottomPixels = layout.positionFromMinutes(range.end);
-      const heightPixels = Math.max(54, bottomPixels - topPixels);
-      const lessonLaneCount = Math.max(1, assignment.laneCount || 1);
-      const laneWidth = 100 / lessonLaneCount;
-      const card = renderLessonCard(lesson, {
-        durationMinutes,
-        laneCount: lessonLaneCount
-      });
-      card.style.setProperty("--lesson-top", `${scaledFloat(Math.max(0, topPixels)).toFixed(2)}px`);
-      card.style.setProperty("--lesson-height", `${scaledFloat(heightPixels).toFixed(2)}px`);
-      card.style.setProperty("--lesson-left", `${assignment.lane * laneWidth}%`);
-      card.style.setProperty("--lesson-width", `${laneWidth}%`);
-      track.append(card);
-    });
-
-    grid.append(track);
-  });
-
-  fitShell.append(grid);
-  scroller.append(fitShell);
+  scroller.append(grid);
   section.append(scroller);
   return section;
 }
-
 function renderTimetable(lessons) {
   const filteredLessons = lessons.filter((lesson) => lesson.category === activeCategory).sort(byDayAndTime);
   board.innerHTML = "";
