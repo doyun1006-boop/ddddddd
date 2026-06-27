@@ -81,8 +81,8 @@ const zoomOptions = [
   { value: "1.5", label: "150%" }
 ];
 
-// v19: 기존 v18의 100% 저장값이 남아 있어도 새 버전에서는 전체보기부터 보이도록 별도 키를 사용합니다.
-let timetableZoomMode = normalizeZoomMode(getStorageItem("academyTimetableZoomModeV19", "fit"));
+// v20: transform 축소 대신 실제 레이아웃 크기를 계산해 핀치 확대 후 스크롤이 자연스럽게 작동하도록 별도 키를 사용합니다.
+let timetableZoomMode = normalizeZoomMode(getStorageItem("academyTimetableZoomModeV20", "fit"));
 
 function normalizeZoomMode(value) {
   const raw = String(value || "fit").trim();
@@ -109,7 +109,7 @@ function resolveTimetableZoom(totalWidth) {
 
 function setTimetableZoom(value) {
   timetableZoomMode = normalizeZoomMode(value);
-  setStorageItem("academyTimetableZoomModeV19", timetableZoomMode);
+  setStorageItem("academyTimetableZoomModeV20", timetableZoomMode);
   if (latestData) render(latestData);
 }
 
@@ -524,6 +524,10 @@ function renderTimetableSection(title, days, lessons) {
 
   const effectiveZoom = resolveTimetableZoom(layout.totalWidth);
   const contentHeight = layout.headerHeight + layout.totalHeight;
+  const scaled = (value) => Math.max(1, Math.round(value * effectiveZoom));
+  const scaledFloat = (value) => Math.max(0, value * effectiveZoom);
+  const scaledTotalWidth = scaled(layout.totalWidth);
+  const scaledContentHeight = scaled(contentHeight);
 
   const controls = document.createElement("div");
   controls.className = "timetable-view-controls";
@@ -549,23 +553,23 @@ function renderTimetableSection(title, days, lessons) {
 
   const fitShell = document.createElement("div");
   fitShell.className = "schedule-fit-shell";
-  fitShell.style.width = `${Math.ceil(layout.totalWidth * effectiveZoom)}px`;
-  fitShell.style.minWidth = `${Math.ceil(layout.totalWidth * effectiveZoom)}px`;
-  fitShell.style.height = `${Math.ceil(contentHeight * effectiveZoom)}px`;
+  fitShell.style.width = `${scaledTotalWidth}px`;
+  fitShell.style.minWidth = `${scaledTotalWidth}px`;
+  fitShell.style.height = `${scaledContentHeight}px`;
 
   const grid = document.createElement("div");
   grid.className = "schedule-grid duration-timetable";
   grid.style.setProperty("--days-count", days.length);
   grid.style.setProperty("--slot-count", slots.length);
-  grid.style.setProperty("--header-height", `${layout.headerHeight}px`);
-  grid.style.setProperty("--time-col", `${layout.timeColumnWidth}px`);
-  grid.style.setProperty("--grid-min-width", `${layout.totalWidth}px`);
-  grid.style.gridTemplateColumns = `${layout.timeColumnWidth}px ${layout.dayWidths.map((width) => `${width}px`).join(" ")}`;
-  grid.style.gridTemplateRows = `${layout.headerHeight}px ${layout.rowHeights.map((height) => `${height}px`).join(" ")}`;
-  grid.style.width = `${layout.totalWidth}px`;
-  grid.style.minWidth = `${layout.totalWidth}px`;
-  grid.style.height = `${contentHeight}px`;
-  grid.style.transform = `scale(${effectiveZoom})`;
+  grid.style.setProperty("--header-height", `${scaled(layout.headerHeight)}px`);
+  grid.style.setProperty("--time-col", `${scaled(layout.timeColumnWidth)}px`);
+  grid.style.setProperty("--grid-min-width", `${scaledTotalWidth}px`);
+  grid.style.gridTemplateColumns = `${scaled(layout.timeColumnWidth)}px ${layout.dayWidths.map((width) => `${scaled(width)}px`).join(" ")}`;
+  grid.style.gridTemplateRows = `${scaled(layout.headerHeight)}px ${layout.rowHeights.map((height) => `${scaled(height)}px`).join(" ")}`;
+  grid.style.width = `${scaledTotalWidth}px`;
+  grid.style.minWidth = `${scaledTotalWidth}px`;
+  grid.style.height = `${scaledContentHeight}px`;
+  grid.style.transform = "none";
   grid.style.transformOrigin = "top left";
   grid.style.setProperty("--schedule-zoom", String(effectiveZoom));
 
@@ -628,8 +632,8 @@ function renderTimetableSection(title, days, lessons) {
         durationMinutes,
         laneCount: lessonLaneCount
       });
-      card.style.setProperty("--lesson-top", `${Math.max(0, topPixels)}px`);
-      card.style.setProperty("--lesson-height", `${heightPixels}px`);
+      card.style.setProperty("--lesson-top", `${scaledFloat(Math.max(0, topPixels)).toFixed(2)}px`);
+      card.style.setProperty("--lesson-height", `${scaledFloat(heightPixels).toFixed(2)}px`);
       card.style.setProperty("--lesson-left", `${assignment.lane * laneWidth}%`);
       card.style.setProperty("--lesson-width", `${laneWidth}%`);
       track.append(card);
