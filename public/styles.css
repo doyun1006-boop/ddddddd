@@ -3878,3 +3878,134 @@ body {
     font-size: 8.4px !important;
   }
 }
+
+/* v22: 같은 시간대 수업이 여러 개이면 해당 시간대 행 자체가 아래로 커지는 최종 모바일/PC 보기 */
+.board-style-page .schedule-grid-scroller.no-x-scroll-mode,
+.board-style-page .schedule-grid-scroller {
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.stack-timetable.duration-timetable {
+  grid-template-rows: auto repeat(var(--slot-count), minmax(112px, auto));
+  overflow: visible !important;
+  align-items: stretch;
+}
+
+.stack-timetable .grid-slot,
+.stack-timetable .grid-time-cell {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+.stack-timetable .lesson-stack {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow: visible !important;
+}
+
+.stack-timetable .lesson-stack .timetable-lesson,
+.stack-timetable .lesson-stack .timetable-lesson.is-overlap,
+.stack-timetable .lesson-stack .timetable-lesson.is-compact,
+.stack-timetable .lesson-stack .timetable-lesson.is-mini {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 92px !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+}
+
+.stack-timetable .lesson-time,
+.stack-timetable .timetable-lesson .lesson-name,
+.stack-timetable .lesson-subline,
+.stack-timetable .grade-chip,
+.stack-timetable .capacity-text,
+.stack-timetable .place-text {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 760px) {
+  .stack-timetable.duration-timetable {
+    --time-col-stack: 44px;
+    grid-template-rows: auto repeat(var(--slot-count), minmax(92px, auto));
+    border-radius: 13px;
+  }
+
+  .stack-timetable .grid-head {
+    min-height: 36px;
+    font-size: 12px;
+  }
+
+  .stack-timetable .grid-slot {
+    padding: 4px 2px;
+  }
+
+  .stack-timetable .grid-time-cell {
+    padding: 8px 2px;
+    align-items: start;
+  }
+
+  .stack-timetable .grid-time-cell strong {
+    font-size: 10.2px;
+    letter-spacing: -0.055em;
+  }
+
+  .stack-timetable .lesson-stack {
+    gap: 5px;
+  }
+
+  .stack-timetable .lesson-stack .timetable-lesson,
+  .stack-timetable .lesson-stack .timetable-lesson.is-overlap,
+  .stack-timetable .lesson-stack .timetable-lesson.is-compact,
+  .stack-timetable .lesson-stack .timetable-lesson.is-mini {
+    min-height: 74px !important;
+    padding: 6px 2px !important;
+    gap: 3px !important;
+    border-radius: 8px !important;
+  }
+
+  .stack-timetable .lesson-time,
+  .stack-timetable .timetable-lesson.is-compact .lesson-time,
+  .stack-timetable .timetable-lesson.is-mini .lesson-time {
+    font-size: 8.5px !important;
+    line-height: 1.08 !important;
+    padding: 2px 2px !important;
+  }
+
+  .stack-timetable .timetable-lesson .lesson-name,
+  .stack-timetable .timetable-lesson.is-compact .lesson-name,
+  .stack-timetable .timetable-lesson.is-mini .lesson-name {
+    font-size: 9.6px !important;
+    line-height: 1.13 !important;
+    letter-spacing: -0.055em !important;
+  }
+
+  .stack-timetable .grade-chip,
+  .stack-timetable .timetable-lesson.is-compact .grade-chip,
+  .stack-timetable .timetable-lesson.is-mini .grade-chip {
+    font-size: 7.2px !important;
+    min-height: 13px !important;
+    padding: 1px 2px !important;
+  }
+
+  .stack-timetable .capacity-text,
+  .stack-timetable .timetable-lesson.is-compact .capacity-text {
+    font-size: 7.9px !important;
+  }
+
+  .stack-timetable .place-text,
+  .stack-timetable .timetable-lesson.is-compact .place-text,
+  .stack-timetable .timetable-lesson.is-mini .place-text {
+    font-size: 7.1px !important;
+  }
+}

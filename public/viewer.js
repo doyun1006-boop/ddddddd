@@ -538,6 +538,26 @@ function renderTimetableSection(title, days, lessons) {
   grid.style.setProperty("--days-count", days.length);
   grid.style.setProperty("--slot-count", slots.length);
   grid.style.gridTemplateColumns = `var(--time-col-stack) repeat(${days.length}, minmax(0, 1fr))`;
+
+  // v22: 같은 시간대에 수업이 여러 개 들어가면 해당 시간대 행 자체가 세로로 커집니다.
+  // 카드가 칸 안에서 스크롤되거나 잘리지 않고, 월~금 전체표는 좌우 스크롤 없이 유지됩니다.
+  const maxStackCountBySlot = slots.map((slot) => {
+    return Math.max(
+      1,
+      ...days.map((day) => (lessonsByStartHour.get(`${day}-${slot.startHour}`) || []).length)
+    );
+  });
+
+  const isCompactScreen = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+  const rowHeights = maxStackCountBySlot.map((count) => {
+    const cardHeight = isCompactScreen ? 74 : 92;
+    const gap = isCompactScreen ? 5 : 8;
+    const paddingY = isCompactScreen ? 8 : 16;
+    const minimum = isCompactScreen ? 92 : 116;
+    return Math.max(minimum, count * cardHeight + Math.max(0, count - 1) * gap + paddingY);
+  });
+
+  grid.style.gridTemplateRows = `auto ${rowHeights.map((height) => `minmax(${height}px, auto)`).join(" ")}`;
   grid.style.width = "100%";
   grid.style.minWidth = "0";
 
