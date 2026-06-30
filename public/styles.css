@@ -4009,3 +4009,33 @@ body {
     font-size: 7.1px !important;
   }
 }
+
+/* v23: 카카오톡 인앱 브라우저/모바일 브라우저에서 손가락 확대 허용 */
+html,
+body {
+  touch-action: pan-y pinch-zoom !important;
+}
+
+.board-style-page,
+.board-style-page .board-shell,
+.board-style-page .schedule-board,
+.board-style-page .board-section,
+.board-style-page .schedule-grid-scroller,
+.board-style-page .stack-timetable,
+.board-style-page .grid-slot,
+.board-style-page .grid-time-cell,
+.board-style-page .timetable-lesson {
+  touch-action: pan-y pinch-zoom !important;
+}
+
+@media (max-width: 760px) {
+  .board-style-page .schedule-grid-scroller,
+  .board-style-page .schedule-grid-scroller.no-x-scroll-mode {
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    touch-action: pan-y pinch-zoom !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: auto;
+  }
+}
